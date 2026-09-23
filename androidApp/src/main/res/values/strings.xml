@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DeskBuddy</string>
+
+    <string name="connect_subtitle">Control your PC from your phone</string>
+    <string name="saved_pc">Your PC</string>
+    <string name="reconnect">Reconnect</string>
+    <string name="discovered_desktops">On your network</string>
+    <string name="searching_pcs">Looking for PCs on your Wi-Fi…</string>
+    <string name="no_desktops_found">No desktops found yet. Scanning your Wi-Fi too — make sure DeskBuddy is running on your PC.</string>
+    <string name="manual_title">Connect by address</string>
+    <string name="manual_ip_hint">PC IP address (e.g. 192.168.1.20)</string>
+    <string name="connect">Connect</string>
+    <string name="connecting_to">Connecting to %1$s…</string>
+
+    <string name="pin_title">Enter pairing PIN</string>
+    <string name="pin_subtitle">The 6-digit code is shown in the DeskBuddy window on your PC.</string>
+    <string name="attempts_left">Wrong PIN. %1$d attempts left.</string>
+    <string name="pair">Pair</string>
+    <string name="cancel">Cancel</string>
+
+    <string name="status_connected">Connected</string>
+    <string name="reconnecting">Reconnecting… (attempt %1$d)</string>
+    <string name="cd_disconnect">Disconnect from PC</string>
+
+    <string name="tab_media">Media</string>
+    <string name="tab_apps">Apps</string>
+    <string name="tab_share">Share</string>
+    <string name="standby">Standby</string>
+    <string name="cd_exit_standby">Exit standby</string>
+    <string name="standby_no_shortcuts">No shortcuts yet. Star apps on the Apps tab to see them here.</string>
+
+    <string name="media_nothing_playing">Nothing playing</string>
+    <string name="media_nothing_playing_hint">Start something on your PC and it will show up here.</string>
+    <string name="media_output_device">Output device</string>
+    <string name="media_volume_percent">%1$d%%</string>
+    <string name="cd_seek">Seek</string>
+    <string name="cd_volume">Volume</string>
+    <string name="cd_choose_output">Choose output device</string>
+    <string name="cd_play_pause">Play or pause</string>
+    <string name="cd_next">Next track</string>
+    <string name="cd_previous">Previous track</string>
+    <string name="cd_volume_up">Volume up</string>
+    <string name="cd_volume_down">Volume down</string>
+    <string name="cd_mute">Mute</string>
+
+    <string name="apps_shortcuts_title">Shortcuts</string>
+    <string name="apps_no_shortcuts">No shortcuts yet. Star an app below, or add one from the DeskBuddy window on your PC.</string>
+    <string name="apps_all_title">All apps on PC</string>
+    <string name="apps_search_hint">Search apps</string>
+    <string name="apps_refresh">Refresh</string>
+    <string name="apps_loading">Loading apps from your PC…</string>
+    <string name="apps_no_match">No apps match your search.</string>
+    <string name="cd_pin">Add to shortcuts</string>
+    <string name="cd_unpin">Remove from shortcuts</string>
+    <string name="cd_launch">Launch %1$s</string>
+
+    <string name="share_clipboard_title">Clipboard</string>
+    <string name="share_auto_sync">Auto-sync with PC</string>
+    <string name="share_send_clipboard">Send clipboard</string>
+    <string name="share_get_clipboard">Get PC clipboard</string>
+    <string name="share_text_title">Send text to PC</string>
+    <string name="share_text_hint">Type or paste text</string>
+    <string name="share_send_text">Send</string>
+    <string name="share_file_title">Files</string>
+    <string name="share_pick_file">Send a file</string>
+    <string name="share_sending">Sending %1$s</string>
+    <string name="share_receiving">Receiving %1$s</string>
+    <string name="share_percent">%1$d%%</string>
+    <string name="share_inbox_title">Received from PC</string>
+    <string name="share_inbox_empty">Nothing received yet. Text and files sent from your PC show up here.</string>
+    <string name="share_copy">Copy</string>
+    <string name="share_saved_to">Saved to %1$s</string>
+    <string name="share_clear_inbox">Clear</string>
+
+    <string name="err_connection_failed">Could not connect. Check that DeskBuddy is running on your PC.</string>
+    <string name="err_connection_lost">Connection lost.</string>
+    <string name="err_pairing_rejected">Pairing rejected by the PC.</string>
+    <string name="err_desktop_busy">Another device is already connected to this PC.</string>
+    <string name="err_unsupported_os">This action is not supported on the PC\'s operating system.</string>
+    <string name="err_internal">Something went wrong. Please try again.</string>
+    <string name="err_not_connected">Not connected to a PC.</string>
+    <string name="err_app_not_found">That app is no longer available on the PC.</string>
+    <string name="err_transfer_failed">File transfer failed.</string>
+    <string name="err_clipboard_empty">Your clipboard has no text to send.</string>
+    <string name="err_file_unreadable">Could not read that file.</string>
+</resources>
