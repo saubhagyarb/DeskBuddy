@@ -81,7 +81,7 @@ fun StandbyScreen(viewModel: ConnectionViewModel, onExit: () -> Unit) {
                 }
                 HorizontalPager(state = pager, modifier = Modifier.weight(1f)) { page ->
                     when (page) {
-                        0 -> StandbyShortcutsPage(apps, viewModel.apps::launch)
+                        0 -> StandbyShortcutsPage(apps, isWide, viewModel.apps::launch)
                         else -> StandbyMediaPage(
                             state = media,
                             isWide = isWide,

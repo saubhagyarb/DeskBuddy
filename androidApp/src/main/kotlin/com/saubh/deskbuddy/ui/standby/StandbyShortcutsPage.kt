@@ -35,7 +35,7 @@ import com.saubh.deskbuddy.ui.components.cookieShape
 
 /** Shortcut grid on black; empty state when nothing is starred. */
 @Composable
-fun StandbyShortcutsPage(state: AppsUiState, onLaunch: (String) -> Unit) {
+fun StandbyShortcutsPage(state: AppsUiState, isWide: Boolean, onLaunch: (String) -> Unit) {
     if (state.shortcuts.isEmpty()) {
         Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
             Text(
@@ -47,8 +47,9 @@ fun StandbyShortcutsPage(state: AppsUiState, onLaunch: (String) -> Unit) {
         }
         return
     }
+    val columns = if (isWide) GridCells.Fixed(4) else GridCells.Adaptive(minSize = 112.dp)
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 112.dp),
+        columns = columns,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),

@@ -61,6 +61,6 @@ fun MediaTab(
         }
     }
     if (showDevices) {
-        OutputDeviceSheet(state.audio?.devices.orEmpty(), onSelectDevice) { showDevices = false }
+        OutputDeviceDialog(state.audio?.devices.orEmpty(), onSelectDevice) { showDevices = false }
     }
 }

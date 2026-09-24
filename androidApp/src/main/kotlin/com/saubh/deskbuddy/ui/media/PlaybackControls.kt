@@ -100,8 +100,8 @@ private fun HeroControl(icon: ImageVector, cdRes: Int, interaction: MutableInter
         onClick = onClick,
         shapes = IconButtonDefaults.shapes(),
         interactionSource = interaction,
-        modifier = modifier.size(IconButtonDefaults.largeContainerSize()).semantics { contentDescription = cd },
-    ) { Icon(icon, contentDescription = null, modifier = Modifier.size(IconButtonDefaults.largeIconSize)) }
+        modifier = modifier.size(IconButtonDefaults.mediumContainerSize()).semantics { contentDescription = cd },
+    ) { Icon(icon, contentDescription = null, modifier = Modifier.size(IconButtonDefaults.mediumIconSize)) }
 }
 
 @Composable
@@ -111,6 +111,6 @@ private fun TonalControl(icon: ImageVector, cdRes: Int, interaction: MutableInte
         onClick = onClick,
         shapes = IconButtonDefaults.shapes(),
         interactionSource = interaction,
-        modifier = modifier.size(IconButtonDefaults.mediumContainerSize()).semantics { contentDescription = cd },
-    ) { Icon(icon, contentDescription = null, modifier = Modifier.size(IconButtonDefaults.mediumIconSize)) }
+        modifier = modifier.size(IconButtonDefaults.smallContainerSize()).semantics { contentDescription = cd },
+    ) { Icon(icon, contentDescription = null, modifier = Modifier.size(IconButtonDefaults.smallIconSize)) }
 }
