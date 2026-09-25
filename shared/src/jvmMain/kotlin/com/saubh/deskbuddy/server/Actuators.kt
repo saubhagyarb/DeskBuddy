@@ -8,6 +8,7 @@ class Actuators(
     val files: FileReceiver,
     val mediaSession: MediaSessionActuator = UnsupportedMediaSessionActuator(),
     val audio: AudioActuator = UnsupportedAudioActuator("unknown"),
+    val power: PowerActuator = UnsupportedPowerActuator("unknown"),
 ) {
     /** Invoked on [com.saubh.deskbuddy.protocol.MediaStateRequestCommand]; the desktop app re-pushes its media state. */
     var onStateRequested: () -> Unit = {}

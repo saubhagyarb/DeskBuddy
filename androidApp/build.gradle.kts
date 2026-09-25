@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeScreenshot)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -25,6 +26,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodelCompose)
     implementation(libs.androidx.lifecycle.runtimeCompose)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.kotlinx.serializationJson)
+    implementation(libs.kotlinx.coroutinesCore)
 
     implementation(libs.compose.uiToolingPreview)
     debugImplementation(libs.compose.uiTooling)

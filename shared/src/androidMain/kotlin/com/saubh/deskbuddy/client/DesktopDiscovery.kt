@@ -10,7 +10,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 
-data class DiscoveredDesktop(val name: String, val host: String, val port: Int)
+/** [id] is the PC's stable id when known (the subnet sweep reads it from `/info`; mDNS does not carry it). */
+data class DiscoveredDesktop(val name: String, val host: String, val port: Int, val id: String = "")
 
 /**
  * mDNS discovery via Android NSD. Resolves are serialised (Android rejects concurrent

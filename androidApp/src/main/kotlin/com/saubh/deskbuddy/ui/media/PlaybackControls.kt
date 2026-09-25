@@ -77,16 +77,17 @@ fun Transport(state: MediaUiState, onMedia: (MediaAction) -> Unit, modifier: Mod
             val prev = remember { MutableInteractionSource() }
             val play = remember { MutableInteractionSource() }
             val next = remember { MutableInteractionSource() }
-            TonalControl(DeskBuddyIcons.SkipPrevious, R.string.cd_previous, prev, Modifier.animateWidth(prev)) {
+            
+            TonalControl(DeskBuddyIcons.SkipPrevious, R.string.cd_previous, prev, Modifier.animateWidth(prev).align(Alignment.CenterVertically)) {
                 onMedia(MediaAction.PREVIOUS)
             }
             HeroControl(
                 if (state.isPlaying) DeskBuddyIcons.Pause else DeskBuddyIcons.Play,
                 R.string.cd_play_pause,
                 play,
-                Modifier.animateWidth(play),
+                Modifier.animateWidth(play).align(Alignment.CenterVertically),
             ) { onMedia(MediaAction.PLAY_PAUSE) }
-            TonalControl(DeskBuddyIcons.SkipNext, R.string.cd_next, next, Modifier.animateWidth(next)) {
+            TonalControl(DeskBuddyIcons.SkipNext, R.string.cd_next, next, Modifier.animateWidth(next).align(Alignment.CenterVertically)) {
                 onMedia(MediaAction.NEXT)
             }
         }

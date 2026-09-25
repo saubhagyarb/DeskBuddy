@@ -4,6 +4,12 @@
 
     <string name="connect_subtitle">Control your PC from your phone</string>
     <string name="saved_pc">Your PC</string>
+    <string name="saved_pcs">Paired PCs</string>
+    <string name="saved_pc_auto_hint">Connects automatically whenever this PC is on — no need to pair again.</string>
+    <string name="cd_forget_pc">Forget %1$s</string>
+    <string name="forget_pc_title">Forget %1$s?</string>
+    <string name="forget_pc_text">This phone will stop connecting to it automatically. You will need the pairing PIN to connect again.</string>
+    <string name="forget_pc_confirm">Forget</string>
     <string name="reconnect">Reconnect</string>
     <string name="discovered_desktops">On your network</string>
     <string name="searching_pcs">Looking for PCs on your Wi-Fi…</string>
@@ -28,6 +34,15 @@
     <string name="tab_share">Share</string>
     <string name="standby">Standby</string>
     <string name="cd_exit_standby">Exit standby</string>
+    <string name="cd_lock_pc">Lock PC</string>
+    <string name="cd_restart_pc">Restart PC</string>
+    <string name="cd_shutdown_pc">Shut down PC</string>
+    <string name="power_restart_title">Restart your PC?</string>
+    <string name="power_restart_text">Open apps on the PC will close. Unsaved work may be lost.</string>
+    <string name="power_restart_confirm">Restart</string>
+    <string name="power_shutdown_title">Shut down your PC?</string>
+    <string name="power_shutdown_text">Open apps on the PC will close. Unsaved work may be lost.</string>
+    <string name="power_shutdown_confirm">Shut down</string>
     <string name="standby_no_shortcuts">No shortcuts yet. Star apps on the Apps tab to see them here.</string>
 
     <string name="media_nothing_playing">Nothing playing</string>
@@ -38,6 +53,10 @@
     <string name="cd_volume">Volume</string>
     <string name="cd_choose_output">Choose output device</string>
     <string name="cd_play_pause">Play or pause</string>
+    <string name="cd_play">Play</string>
+    <string name="cd_pause">Pause</string>
+    <string name="media_unknown_title">Playing on your PC</string>
+    <string name="separator_dot">" • "</string>
     <string name="cd_next">Next track</string>
     <string name="cd_previous">Previous track</string>
     <string name="cd_volume_up">Volume up</string>
@@ -72,6 +91,16 @@
     <string name="share_copy">Copy</string>
     <string name="share_saved_to">Saved to %1$s</string>
     <string name="share_clear_inbox">Clear</string>
+
+    <string name="notif_channel_connection">PC connection</string>
+    <string name="notif_channel_media">Now playing on PC</string>
+    <string name="notif_connected">Connected to %1$s</string>
+    <string name="notif_connected_text">Tap to open DeskBuddy.</string>
+    <string name="notif_connecting">Connecting to your PC…</string>
+    <string name="notif_waiting">Waiting for your PC</string>
+    <string name="notif_waiting_text">DeskBuddy connects on its own as soon as your PC is on.</string>
+    <string name="notif_paused">Disconnected</string>
+    <string name="notif_paused_text">Open DeskBuddy to connect again.</string>
 
     <string name="err_connection_failed">Could not connect. Check that DeskBuddy is running on your PC.</string>
     <string name="err_connection_lost">Connection lost.</string>

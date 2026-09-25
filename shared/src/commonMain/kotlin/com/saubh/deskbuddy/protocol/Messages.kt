@@ -24,7 +24,12 @@ data class Envelope(val token: String, val command: Command) : Message()
 
 @Serializable
 @SerialName("pair_success")
-data class PairSuccess(val token: String) : Message()
+data class PairSuccess(
+    val token: String,
+    /** Lets the phone recognise this PC again after its IP changes. Empty from older desktops. */
+    val desktopName: String = "",
+    val desktopId: String = "",
+) : Message()
 
 @Serializable
 @SerialName("pair_failure")
@@ -166,9 +171,19 @@ data class SetVolumeCommand(val volume: Int) : Command()
 @SerialName("audio_device_set")
 data class SetAudioDeviceCommand(val id: String) : Command()
 
-/** Body of `GET /info`; lets the phone verify a swept host is DeskBuddy. Not a [Message]. */
+/** Body of `GET /info`; lets the phone verify a swept host is DeskBuddy. Not a [Message]. [id] is stable per PC. */
 @Serializable
-data class DesktopInfo(val name: String, val port: Int)
+data class DesktopInfo(val name: String, val port: Int, val id: String = "")
+
+// ---- Power (M4) ---------------------------------------------------------
+
+@Serializable
+enum class PowerAction { SHUTDOWN, RESTART, LOCK }
+
+/** Phone → Desktop. Reply is Ack; the desktop acts right after replying. */
+@Serializable
+@SerialName("power")
+data class PowerCommand(val action: PowerAction) : Command()
 
 @Serializable
 enum class MediaAction { PLAY_PAUSE, NEXT, PREVIOUS, VOLUME_UP, VOLUME_DOWN, MUTE_TOGGLE }

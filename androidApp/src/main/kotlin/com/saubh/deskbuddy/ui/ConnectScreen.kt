@@ -24,6 +24,7 @@ import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
@@ -32,7 +33,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -43,6 +46,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
@@ -60,14 +65,21 @@ import com.saubh.deskbuddy.ui.theme.DeskBuddyIcons
 @Composable
 fun ConnectScreen(
     state: ConnectionUiState,
-    saved: SavedDesktop?,
-    onReconnectSaved: () -> Unit,
-    onConnect: (name: String, host: String, port: Int, token: String?) -> Unit,
+    saved: List<SavedDesktop>,
+    onReconnect: (SavedDesktop) -> Unit,
+    onForget: (SavedDesktop) -> Unit,
+    onConnect: (name: String, host: String, port: Int) -> Unit,
     onSubmitPin: (String) -> Unit,
     onCancelPairing: () -> Unit,
     onStartDiscovery: () -> Unit,
+    onVisibleChange: (Boolean) -> Unit,
 ) {
     LaunchedEffect(Unit) { onStartDiscovery() }
+    DisposableEffect(Unit) {
+        onVisibleChange(true)
+        onDispose { onVisibleChange(false) }
+    }
+    var forgetting by remember { mutableStateOf<SavedDesktop?>(null) }
     val desktops = (state as? ConnectionUiState.Discovering)?.desktops.orEmpty()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val fullSpan: LazyGridItemSpanScope.() -> GridItemSpan = { GridItemSpan(maxLineSpan) }
@@ -98,8 +110,11 @@ fun ConnectScreen(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            if (saved != null) {
-                item(span = fullSpan) { SavedPcHero(saved, onReconnectSaved) }
+            if (saved.isNotEmpty()) {
+                item(span = fullSpan) { SectionTitle(stringResource(R.string.saved_pcs)) }
+                items(saved, key = { it.host + it.token }, span = { GridItemSpan(maxLineSpan) }) { pc ->
+                    SavedPcCard(pc, highlighted = pc == saved.first(), onConnect = { onReconnect(pc) }, onForget = { forgetting = pc })
+                }
             }
             item(span = fullSpan) {
                 SectionTitle(stringResource(R.string.discovered_desktops)) {
@@ -110,16 +125,11 @@ fun ConnectScreen(
                 item(span = fullSpan) { SearchingCard() }
             } else {
                 items(desktops, key = { it.host }) { desktop ->
-                    DesktopRow(desktop) {
-                        val token = saved?.takeIf { it.host == desktop.host }?.token
-                        onConnect(desktop.name, desktop.host, desktop.port, token)
-                    }
+                    DesktopRow(desktop) { onConnect(desktop.name, desktop.host, desktop.port) }
                 }
             }
             item(span = fullSpan) {
-                ManualConnectCard { host ->
-                    onConnect(host, host, Protocol.PORT, saved?.takeIf { it.host == host }?.token)
-                }
+                ManualConnectCard { host -> onConnect(host, host, Protocol.PORT) }
             }
             if (state is ConnectionUiState.Connecting) {
                 item(span = fullSpan) { ConnectingRow(state.target) }
@@ -130,28 +140,38 @@ fun ConnectScreen(
     if (state is ConnectionUiState.Pairing) {
         PinDialog(attemptsLeft = state.attemptsLeft, onSubmit = onSubmitPin, onDismiss = onCancelPairing)
     }
+    forgetting?.let { pc ->
+        ForgetPcDialog(pc.name, onConfirm = { onForget(pc); forgetting = null }, onDismiss = { forgetting = null })
+    }
 }
 
 @Composable
-private fun SavedPcHero(saved: SavedDesktop, onReconnect: () -> Unit) {
+private fun SavedPcCard(saved: SavedDesktop, highlighted: Boolean, onConnect: () -> Unit, onForget: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
+    val container = if (highlighted) scheme.primaryContainer else scheme.surfaceContainerHigh
+    val content = if (highlighted) scheme.onPrimaryContainer else scheme.onSurface
+    val forgetCd = stringResource(R.string.cd_forget_pc, saved.name)
     Card(
         shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(containerColor = scheme.primaryContainer, contentColor = scheme.onPrimaryContainer),
+        colors = CardDefaults.cardColors(containerColor = container, contentColor = content),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 IconAvatar(DeskBuddyIcons.Computer, 64.dp, cookieShape(), scheme.primary, scheme.onPrimary)
-                Column {
+                Column(Modifier.weight(1f)) {
                     Text(stringResource(R.string.saved_pc), style = MaterialTheme.typography.labelLargeEmphasized)
                     Text(saved.name, style = MaterialTheme.typography.headlineSmallEmphasized)
                     Text(saved.host, style = MaterialTheme.typography.bodyMedium)
                 }
+                IconButton(onClick = onForget, modifier = Modifier.semantics { contentDescription = forgetCd }) {
+                    Icon(DeskBuddyIcons.Delete, contentDescription = null)
+                }
             }
+            Text(stringResource(R.string.saved_pc_auto_hint), style = MaterialTheme.typography.bodyMedium)
             MediumButton(
                 text = stringResource(R.string.reconnect),
-                onClick = onReconnect,
+                onClick = onConnect,
                 icon = DeskBuddyIcons.Link,
                 modifier = Modifier.fillMaxWidth(),
             )

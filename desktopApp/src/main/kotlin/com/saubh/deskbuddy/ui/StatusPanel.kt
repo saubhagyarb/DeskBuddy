@@ -18,6 +18,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,7 +38,10 @@ import com.saubh.deskbuddy.ui.components.cookieShape
 import com.saubh.deskbuddy.ui.theme.DeskBuddyIcons
 import kotlinx.coroutines.delay
 
-/** Home pane: one hero card whose content follows the server state, plus address chips. */
+/** "Start with Windows" switch state; null hides the card (non-Windows). */
+data class StartupSetting(val enabled: Boolean, val onChange: (Boolean) -> Unit)
+
+/** Home pane: one hero card whose content follows the server state, address chips, and the startup switch. */
 @Composable
 fun StatusPanel(
     state: ServerState,
@@ -45,13 +49,14 @@ fun StatusPanel(
     ipAddress: String,
     port: Int,
     mediaHelperAvailable: Boolean,
+    startup: StartupSetting?,
     onUnpairAll: () -> Unit,
 ) {
     Column(Modifier.widthIn(max = 640.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         when (state) {
             is ServerState.Waiting -> WaitingHero()
             is ServerState.Pairing -> PairingHero(state.pin)
-            is ServerState.Connected -> ConnectedHero(state.deviceName, onUnpairAll)
+            is ServerState.Connected -> ConnectedHero(state.devices, onUnpairAll)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AssistChip(
@@ -73,6 +78,7 @@ fun StatusPanel(
                 shape = CircleShape,
             )
         }
+        startup?.let { StartupCard(it) }
     }
 }
 
@@ -134,12 +140,15 @@ private fun PairingHero(pin: String) {
 }
 
 @Composable
-private fun ConnectedHero(deviceName: String, onUnpairAll: () -> Unit) {
+private fun ConnectedHero(devices: List<String>, onUnpairAll: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     HeroCard(scheme.surfaceContainerHigh) {
         IconAvatar(DeskBuddyIcons.Smartphone, 80.dp, cookieShape(), scheme.primary, scheme.onPrimary)
         Text("Connected", style = MaterialTheme.typography.labelLargeEmphasized, color = scheme.primary)
-        Text(deviceName, style = MaterialTheme.typography.headlineMediumEmphasized)
+        Text(devices.joinToString(", "), style = MaterialTheme.typography.headlineMediumEmphasized, textAlign = TextAlign.Center)
+        if (devices.size > 1) {
+            Text("${devices.size} phones connected", style = MaterialTheme.typography.labelLarge, color = scheme.onSurfaceVariant)
+        }
         Text(
             "Media, apps, clipboard and files are ready. Use the Share and Shortcuts panes on the left.",
             style = MaterialTheme.typography.bodyLarge,
@@ -147,5 +156,31 @@ private fun ConnectedHero(deviceName: String, onUnpairAll: () -> Unit) {
             textAlign = TextAlign.Center,
         )
         MediumOutlinedButton("Unpair all devices", onUnpairAll, icon = DeskBuddyIcons.Delete)
+    }
+}
+
+@Composable
+private fun StartupCard(setting: StartupSetting) {
+    val scheme = MaterialTheme.colorScheme
+    Card(
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = scheme.surfaceContainerLow),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text("Start with Windows", style = MaterialTheme.typography.titleMediumEmphasized)
+                Text(
+                    "Runs in the tray after you sign in, so your phone reconnects on its own.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = scheme.onSurfaceVariant,
+                )
+            }
+            Switch(checked = setting.enabled, onCheckedChange = setting.onChange)
+        }
     }
 }

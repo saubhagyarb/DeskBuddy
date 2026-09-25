@@ -25,6 +25,7 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -63,10 +64,22 @@ fun RemoteScreen(state: ConnectionUiState, viewModel: ConnectionViewModel) {
     }
     val isWide = isWideWindow()
     var tab by rememberSaveable { mutableStateOf(RemoteTab.MEDIA) }
-    var standby by rememberSaveable { mutableStateOf(false) }
+    
+    val autoStandby by viewModel.autoStandby.isAutoStandby.collectAsStateWithLifecycle()
+    var userStandby by rememberSaveable { mutableStateOf(false) }
+    var suppressAutoStandby by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(autoStandby) {
+        if (!autoStandby) suppressAutoStandby = false
+    }
+
+    val standby = userStandby || (autoStandby && !suppressAutoStandby)
 
     if (standby) {
-        StandbyScreen(viewModel) { standby = false }
+        StandbyScreen(viewModel) {
+            userStandby = false
+            if (autoStandby) suppressAutoStandby = true
+        }
         return
     }
 
@@ -75,7 +88,7 @@ fun RemoteScreen(state: ConnectionUiState, viewModel: ConnectionViewModel) {
         subtitle = subtitle,
         selectedTab = tab,
         onTabSelected = { tab = it },
-        onStandby = { standby = true },
+        onStandby = { userStandby = true },
         onDisconnect = viewModel::disconnect,
     ) { TabContent(tab, isWide, viewModel) }
 }

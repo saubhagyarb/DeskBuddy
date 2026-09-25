@@ -18,7 +18,7 @@ import com.saubh.deskbuddy.ui.theme.DeskBuddyTheme
 @Composable
 fun DeskBuddyApp(viewModel: ConnectionViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val saved by viewModel.savedDesktop.collectAsStateWithLifecycle()
+    val saved by viewModel.savedDesktops.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
 
@@ -38,11 +38,13 @@ fun DeskBuddyApp(viewModel: ConnectionViewModel) {
                     ConnectScreen(
                         state = s,
                         saved = saved,
-                        onReconnectSaved = viewModel::reconnectSaved,
+                        onReconnect = viewModel::reconnect,
+                        onForget = viewModel::forget,
                         onConnect = viewModel::connect,
                         onSubmitPin = viewModel::submitPin,
                         onCancelPairing = viewModel::disconnect,
                         onStartDiscovery = viewModel::startDiscovery,
+                        onVisibleChange = viewModel::setConnectScreenVisible,
                     )
             }
             SnackbarHost(snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))

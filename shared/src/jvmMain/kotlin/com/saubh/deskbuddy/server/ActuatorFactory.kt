@@ -19,7 +19,11 @@ object ActuatorFactory {
         files = FileReceiver(onFileReceived = onFileReceived),
         mediaSession = mediaSession(osName),
         audio = audio(osName),
+        power = power(osName),
     )
+
+    fun power(osName: String): PowerActuator =
+        if (isWindows(osName)) WindowsPowerActuator() else UnsupportedPowerActuator(osName)
 
     fun media(osName: String): MediaActuator =
         if (isWindows(osName)) WindowsMediaActuator() else UnsupportedMediaActuator(osName)

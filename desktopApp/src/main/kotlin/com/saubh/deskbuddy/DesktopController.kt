@@ -9,13 +9,18 @@ import com.saubh.deskbuddy.server.ActuatorFactory
 import com.saubh.deskbuddy.server.ClipboardWatcher
 import com.saubh.deskbuddy.server.ControlServer
 import com.saubh.deskbuddy.server.DeskBuddyAdvertiser
+import com.saubh.deskbuddy.server.DesktopIdentity
 import com.saubh.deskbuddy.server.FileSender
 import com.saubh.deskbuddy.server.PairedDeviceStore
 import com.saubh.deskbuddy.server.ServerState
+import com.saubh.deskbuddy.server.StartupRegistration
 import com.saubh.deskbuddy.server.media.MediaStateBroadcaster
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
@@ -40,7 +45,22 @@ class DesktopController(private val scope: CoroutineScope) {
         onTextShared = { addToInbox(InboxItem.Text(it, System.currentTimeMillis())) },
         onFileReceived = { addToInbox(InboxItem.File(it, System.currentTimeMillis())) },
     )
-    private val server = ControlServer(store = store, actuators = actuators)
+    private val _showRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /** Another launch of the app asked this one to show its window. */
+    val showRequests: SharedFlow<Unit> = _showRequests.asSharedFlow()
+
+    private val server = ControlServer(
+        store = store,
+        actuators = actuators,
+        desktopId = DesktopIdentity().id,
+        onShowRequested = { _showRequests.tryEmit(Unit) },
+    )
+    private val startup = StartupRegistration()
+    val isWindows: Boolean = System.getProperty("os.name").orEmpty().startsWith("Windows", ignoreCase = true)
+
+    private val _startWithWindows = MutableStateFlow(false)
+    val startWithWindows: StateFlow<Boolean> = _startWithWindows.asStateFlow()
     private val advertiser = DeskBuddyAdvertiser()
     private val fileSender = FileSender(server::push)
     private val broadcaster = MediaStateBroadcaster(actuators.mediaSession, actuators.audio)
@@ -67,6 +87,7 @@ class DesktopController(private val scope: CoroutineScope) {
 
     fun start() {
         server.start()
+        if (isWindows) _startWithWindows.value = runCatching { startup.sync() }.getOrDefault(false)
         // mDNS failure must not kill the app — manual IP entry still works.
         runCatching { advertiser.start() }
         actuators.apps.current()
@@ -92,7 +113,7 @@ class DesktopController(private val scope: CoroutineScope) {
     fun sendText(text: String) {
         if (text.isBlank()) return
         scope.launch {
-            if (!server.push(Push(TextShareCommand(text)))) notify("Phone is not connected.")
+            if (!server.push(Push(TextShareCommand(text)))) notify("No phone is connected.")
         }
     }
 
@@ -128,6 +149,14 @@ class DesktopController(private val scope: CoroutineScope) {
     fun copyToClipboard(text: String) = actuators.share.setClipboard(text)
 
     fun unpairAll() = store.removeAll()
+
+    fun setStartWithWindows(enabled: Boolean) {
+        if (startup.setEnabled(enabled)) {
+            _startWithWindows.value = enabled
+        } else {
+            notify("Could not change the Windows startup setting.")
+        }
+    }
 
     fun clearNotice() {
         _notice.value = null

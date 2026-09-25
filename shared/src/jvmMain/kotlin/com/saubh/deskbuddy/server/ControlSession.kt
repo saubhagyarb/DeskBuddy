@@ -30,6 +30,8 @@ import com.saubh.deskbuddy.protocol.PairAttempt
 import com.saubh.deskbuddy.protocol.PairFailure
 import com.saubh.deskbuddy.protocol.PairRequest
 import com.saubh.deskbuddy.protocol.PairSuccess
+import com.saubh.deskbuddy.protocol.PowerAction
+import com.saubh.deskbuddy.protocol.PowerCommand
 import com.saubh.deskbuddy.protocol.Push
 import com.saubh.deskbuddy.protocol.RemoveShortcutCommand
 import com.saubh.deskbuddy.protocol.TextShareCommand
@@ -39,7 +41,7 @@ data class SessionReply(val message: Message?, val closeConnection: Boolean = fa
 interface SessionListener {
     fun onPairingStarted(pin: String)
     fun onPairingEnded()
-    fun onAuthenticated(deviceName: String)
+    fun onAuthenticated(deviceName: String, token: String)
 }
 
 class ControlSession(
@@ -49,6 +51,8 @@ class ControlSession(
     private val now: () -> Long = { System.currentTimeMillis() },
     private val newPin: () -> String = { PinGenerator.generate() },
     private val newToken: () -> String = { TokenGenerator.generate() },
+    private val desktopName: String = "",
+    private val desktopId: String = "",
 ) {
     private companion object {
         val OK = Ack(ok = true)
@@ -83,8 +87,8 @@ class ControlSession(
                 val token = newToken()
                 store.add(PairedDevice(pendingDeviceName, token))
                 endPairing()
-                listener.onAuthenticated(pendingDeviceName)
-                SessionReply(PairSuccess(token))
+                listener.onAuthenticated(pendingDeviceName, token)
+                SessionReply(PairSuccess(token, desktopName, desktopId))
             }
             is PairingResult.WrongPin -> SessionReply(PairFailure(result.attemptsLeft))
             is PairingResult.LockedOut -> {
@@ -107,7 +111,7 @@ class ControlSession(
         if (!store.isValidToken(envelope.token)) {
             return SessionReply(Ack(ok = false, error = ErrorCode.AUTH_REQUIRED))
         }
-        listener.onAuthenticated(store.deviceNameForToken(envelope.token) ?: "Unknown device")
+        listener.onAuthenticated(store.deviceNameForToken(envelope.token) ?: "Unknown device", envelope.token)
         return try {
             SessionReply(execute(envelope.command))
         } catch (e: UnsupportedOsException) {
@@ -149,6 +153,13 @@ class ControlSession(
         }
         is SetAudioDeviceCommand ->
             if (actuators.audio.setDefaultDevice(command.id)) OK.also { actuators.onAudioChanged() } else NOT_FOUND
+        is PowerCommand -> OK.also {
+            when (command.action) {
+                PowerAction.SHUTDOWN -> actuators.power.shutdown()
+                PowerAction.RESTART -> actuators.power.restart()
+                PowerAction.LOCK -> actuators.power.lock()
+            }
+        }
     }
 
     private fun media(action: MediaAction): Message {

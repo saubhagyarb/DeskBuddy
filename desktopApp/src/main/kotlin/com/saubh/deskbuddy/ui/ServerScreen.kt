@@ -45,6 +45,7 @@ fun ServerScreen(controller: DesktopController) {
     val state by controller.serverState.collectAsState()
     val notice by controller.notice.collectAsState()
     val helperAvailable by controller.mediaHelperAvailable.collectAsState()
+    val startWithWindows by controller.startWithWindows.collectAsState()
     val snackbar = remember { SnackbarHostState() }
     var destination by remember { mutableStateOf(Destination.STATUS) }
 
@@ -85,6 +86,7 @@ fun ServerScreen(controller: DesktopController) {
                                 ipAddress = controller.ipAddress,
                                 port = controller.port,
                                 mediaHelperAvailable = helperAvailable,
+                                startup = if (controller.isWindows) StartupSetting(startWithWindows, controller::setStartWithWindows) else null,
                                 onUnpairAll = controller::unpairAll,
                             )
                             Destination.SHARE -> SharePanel(controller)
@@ -103,7 +105,7 @@ private fun PaneHeader(destination: Destination, state: ServerState) {
     Column {
         Text(destination.title, style = MaterialTheme.typography.headlineLargeEmphasized)
         val status = when (state) {
-            is ServerState.Connected -> "Connected to ${state.deviceName}"
+            is ServerState.Connected -> "Connected to ${state.devices.joinToString()}"
             is ServerState.Pairing -> "Pairing in progress"
             is ServerState.Waiting -> destination.subtitle
         }

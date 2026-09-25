@@ -1,61 +1,34 @@
 package com.saubh.deskbuddy.ui
 
 import android.app.Application
-import android.content.ClipboardManager
-import android.content.Context
-import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.saubh.deskbuddy.apps.AppShortcutsController
-import com.saubh.deskbuddy.client.DesktopDiscovery
-import com.saubh.deskbuddy.client.SubnetScanner
-import com.saubh.deskbuddy.media.MediaController
-import com.saubh.deskbuddy.prefs.PairedDesktopPrefs
+import com.saubh.deskbuddy.appGraph
 import com.saubh.deskbuddy.prefs.SavedDesktop
 import com.saubh.deskbuddy.protocol.MediaAction
 import com.saubh.deskbuddy.protocol.MediaCommand
-import com.saubh.deskbuddy.session.RemoteSession
-import com.saubh.deskbuddy.share.ClipboardShareController
-import com.saubh.deskbuddy.share.FileTransferController
+import com.saubh.deskbuddy.protocol.PowerAction
+import com.saubh.deskbuddy.protocol.PowerCommand
 import com.saubh.deskbuddy.share.PendingShare
-import com.saubh.deskbuddy.share.ReceivedFileStore
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-/** Thin facade over the session and the feature controllers; UI talks only to this. */
+/** Thin facade over the app-wide session and feature controllers; UI talks only to this. */
 class ConnectionViewModel(app: Application) : AndroidViewModel(app) {
 
-    private val session = RemoteSession(
-        scope = viewModelScope,
-        prefs = PairedDesktopPrefs(app),
-        discovery = DesktopDiscovery(app),
-        scanner = SubnetScanner(app),
-        deviceName = Build.MODEL,
-    )
+    private val graph = app.appGraph
+    private val session = graph.session
 
-    val share = ClipboardShareController(
-        session = session,
-        clipboard = app.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager,
-        scope = viewModelScope,
-    )
-
-    val files = FileTransferController(
-        session = session,
-        resolver = app.contentResolver,
-        store = ReceivedFileStore(app),
-        cacheDir = app.cacheDir,
-        scope = viewModelScope,
-        onReceived = share::addToInbox,
-    )
-
-    val apps = AppShortcutsController(session, viewModelScope)
-
-    val media = MediaController(session, viewModelScope)
+    val share = graph.share
+    val files = graph.files
+    val apps = graph.apps
+    val media = graph.media
+    val autoStandby = graph.autoStandby
 
     val uiState: StateFlow<ConnectionUiState> = session.uiState
     val errors: SharedFlow<ErrorKind> = session.errors
-    val savedDesktop: StateFlow<SavedDesktop?> = session.savedDesktop
+    val savedDesktops: StateFlow<List<SavedDesktop>> = session.savedDesktops
 
     private val pendingShares = ArrayDeque<PendingShare>()
 
@@ -67,10 +40,17 @@ class ConnectionViewModel(app: Application) : AndroidViewModel(app) {
 
     fun startDiscovery() = session.startDiscovery()
 
-    fun connect(name: String, host: String, port: Int, token: String?) =
-        session.connect(name, host, port, token)
+    /** The connect screen is showing: allow the subnet sweep and try paired PCs right away. */
+    fun setConnectScreenVisible(visible: Boolean) {
+        session.sweepAllowed = visible
+        if (visible) graph.autoConnector.nudge()
+    }
 
-    fun reconnectSaved() = session.reconnectSaved()
+    fun connect(name: String, host: String, port: Int) = session.connect(name, host, port)
+
+    fun reconnect(desktop: SavedDesktop) = session.connect(desktop, quiet = false)
+
+    fun forget(desktop: SavedDesktop) = session.forget(desktop)
 
     fun submitPin(pin: String) = session.submitPin(pin)
 
@@ -78,6 +58,10 @@ class ConnectionViewModel(app: Application) : AndroidViewModel(app) {
 
     fun sendMedia(action: MediaAction) {
         viewModelScope.launch { session.send(MediaCommand(action)) }
+    }
+
+    fun sendPower(action: PowerAction) {
+        viewModelScope.launch { session.send(PowerCommand(action)) }
     }
 
     /** Content from the system share sheet. Sent now if connected, otherwise once connected. */
@@ -105,6 +89,4 @@ class ConnectionViewModel(app: Application) : AndroidViewModel(app) {
             is PendingShare.File -> files.sendFile(pending.uri)
         }
     }
-
-    override fun onCleared() = share.release()
 }

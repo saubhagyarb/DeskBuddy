@@ -22,8 +22,20 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.saubh.deskbuddy"
+            packageName = "DeskBuddy"
             packageVersion = "1.0.0"
+
+            windows {
+                iconFile.set(project.file("icons/deskbuddy.ico"))
+                menuGroup = "DeskBuddy"
+                shortcut = true
+            }
+            macOS {
+                iconFile.set(project.file("icons/deskbuddy.icns"))
+            }
+            linux {
+                iconFile.set(project.file("icons/deskbuddy.png"))
+            }
         }
     }
 }

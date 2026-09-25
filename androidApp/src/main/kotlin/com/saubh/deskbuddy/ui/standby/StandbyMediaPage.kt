@@ -7,16 +7,23 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.FilledTonalIconToggleButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -34,16 +41,8 @@ import com.saubh.deskbuddy.ui.media.NowPlayingArtwork
 import com.saubh.deskbuddy.ui.media.OutputDeviceDialog
 import com.saubh.deskbuddy.ui.media.Timeline
 import com.saubh.deskbuddy.ui.media.Transport
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.FilledTonalIconToggleButton
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Slider
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.remember
-import com.saubh.deskbuddy.ui.theme.DeskBuddyIcons
 import com.saubh.deskbuddy.ui.media.VolumePanel
+import com.saubh.deskbuddy.ui.theme.DeskBuddyIcons
 
 /** Media page on black: big artwork, title, then the same timeline / transport / volume as the tab. */
 @Composable
@@ -59,7 +58,7 @@ fun StandbyMediaPage(
     var showDevices by rememberSaveable { mutableStateOf(false) }
     val art: @Composable () -> Unit = {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            NowPlayingArtwork(state.artwork, if (isWide) 140.dp else 240.dp, StandbyTile, Color.White.copy(alpha = 0.6f))
+            NowPlayingArtwork(state.artwork, 240.dp, StandbyTile, Color.White.copy(alpha = 0.6f))
             Text(
                 state.nowPlaying?.title ?: stringResource(R.string.media_nothing_playing),
                 style = MaterialTheme.typography.headlineSmallEmphasized,
@@ -86,6 +85,7 @@ fun StandbyMediaPage(
         Transport(state, onMedia, Modifier.fillMaxWidth())
         VolumePanel(state, onVolume, onToggleMute, { showDevices = true }, StandbyTile, Modifier.fillMaxWidth())
     }
+    
     if (isWide) {
         Row(
             Modifier.fillMaxSize().padding(horizontal = 24.dp),
@@ -150,8 +150,8 @@ fun StandbyMediaPage(
                             Icon(if (state.audio?.muted == true) DeskBuddyIcons.VolumeOff else DeskBuddyIcons.VolumeUp, null)
                         }
                         
-                        var dragging by remember { mutableStateOf(false) }
-                        var dragValue by remember { mutableFloatStateOf(0f) }
+                        var dragging by rememberSaveable { mutableStateOf(false) }
+                        var dragValue by rememberSaveable { mutableFloatStateOf(0f) }
                         val audio = state.audio
                         Slider(
                             value = if (dragging) dragValue else (audio?.volume ?: 0).toFloat(),

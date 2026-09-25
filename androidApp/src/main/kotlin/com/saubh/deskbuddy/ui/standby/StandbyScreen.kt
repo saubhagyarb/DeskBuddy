@@ -73,6 +73,7 @@ fun StandbyScreen(viewModel: ConnectionViewModel, onExit: () -> Unit) {
                         color = Color.White,
                         modifier = Modifier.weight(1f),
                     )
+                    StandbyPowerButtons(viewModel::sendPower, Modifier.padding(end = 16.dp))
                     FilledTonalIconButton(
                         onClick = onExit,
                         shapes = IconButtonDefaults.shapes(),

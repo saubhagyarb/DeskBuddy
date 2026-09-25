@@ -18,7 +18,12 @@ import kotlinx.coroutines.flow.onCompletion
 
 class DeskBuddyClient {
 
-    private val http = HttpClient(CIO) { install(WebSockets) }
+    private val http = HttpClient(CIO) {
+        install(WebSockets) {
+            // Notices a PC that vanished without closing the socket (sleep, power loss, Wi-Fi drop).
+            pingIntervalMillis = 10_000
+        }
+    }
     private var session: DefaultClientWebSocketSession? = null
 
     /**

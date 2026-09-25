@@ -26,8 +26,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -35,14 +33,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Connection lifecycle for one paired desktop: discovery, pairing, reconnect
- * with backoff, and authenticated command sending. Feature controllers observe
- * [incoming] for desktop-initiated messages and call [send].
+ * Connection lifecycle: discovery, pairing, reconnect with backoff, and authenticated command
+ * sending to one PC at a time. Every paired PC is remembered; [AutoConnector] uses that list to
+ * reconnect without the user. Feature controllers observe [incoming] and call [send].
  */
 class RemoteSession(
     private val scope: CoroutineScope,
@@ -51,12 +51,14 @@ class RemoteSession(
     private val scanner: SubnetScanner,
     private val deviceName: String,
     private val client: DeskBuddyClient = DeskBuddyClient(),
+    private val clock: () -> Long = System::currentTimeMillis,
 ) : MediaGateway {
     private companion object {
         const val MAX_RECONNECT_ATTEMPTS = 3
         const val RECONNECT_BASE_DELAY_MS = 1_000L
         const val SCAN_INITIAL_DELAY_MS = 3_000L
         const val SCAN_INTERVAL_MS = 15_000L
+        const val SCAN_STALE_MS = 60_000L
     }
 
     private val _uiState = MutableStateFlow<ConnectionUiState>(ConnectionUiState.Idle)
@@ -71,8 +73,12 @@ class RemoteSession(
 
     override val connected: Flow<Boolean> = uiState.map { it is ConnectionUiState.Connected }.distinctUntilChanged()
 
-    val savedDesktop: StateFlow<SavedDesktop?> =
-        prefs.saved.stateIn(scope, SharingStarted.Eagerly, null)
+    val savedDesktops: StateFlow<List<SavedDesktop>> =
+        prefs.saved.stateIn(scope, SharingStarted.Eagerly, emptyList())
+
+    /** PCs currently visible on the network (mDNS plus subnet sweep), whatever the UI state. */
+    private val _discovered = MutableStateFlow<List<DiscoveredDesktop>>(emptyList())
+    val discovered: StateFlow<List<DiscoveredDesktop>> = _discovered.asStateFlow()
 
     private var discoveryJob: Job? = null
     private var sessionJob: Job? = null
@@ -83,14 +89,28 @@ class RemoteSession(
     @Volatile
     private var endSession = false
 
+    /** Set by an explicit Disconnect so auto-connect does not immediately undo it. */
+    @Volatile
+    var autoConnectPaused = false
+        private set
+
+    /** The subnet sweep is costly, so it only runs while the connect screen is on screen. */
+    @Volatile
+    var sweepAllowed = false
+
     private enum class SessionOutcome { FAILED, DROPPED, ENDED }
 
     val isConnected: Boolean get() = _uiState.value is ConnectionUiState.Connected
 
+    /** Idle or discovering: nothing connected and no attempt in progress. */
+    val isSearching: Boolean
+        get() = _uiState.value.let { it is ConnectionUiState.Idle || it is ConnectionUiState.Discovering }
+
     private var mdnsFound: List<DiscoveredDesktop> = emptyList()
     private var scanFound: List<DiscoveredDesktop> = emptyList()
+    private var scannedAtMs = 0L
 
-    /** mDNS results as they arrive, plus a subnet sweep when mDNS stays silent. */
+    /** mDNS results as they arrive, plus a subnet sweep when mDNS stays silent. Idempotent. */
     fun startDiscovery() {
         if (discoveryJob != null) return
         discoveryJob = scope.launch {
@@ -105,8 +125,10 @@ class RemoteSession(
             launch {
                 delay(SCAN_INITIAL_DELAY_MS)
                 while (true) {
-                    if (isSearching && mdnsFound.isEmpty() && scanFound.isEmpty()) {
+                    val stale = scanFound.isEmpty() || clock() - scannedAtMs > SCAN_STALE_MS
+                    if (sweepAllowed && isSearching && mdnsFound.isEmpty() && stale) {
                         scanFound = scanner.scan()
+                        scannedAtMs = clock()
                         publishDiscovered()
                     }
                     delay(SCAN_INTERVAL_MS)
@@ -115,25 +137,30 @@ class RemoteSession(
         }
     }
 
-    private val isSearching: Boolean
-        get() = _uiState.value.let { it is ConnectionUiState.Idle || it is ConnectionUiState.Discovering }
-
     private fun publishDiscovered() {
-        if (!isSearching) return
-        _uiState.value = ConnectionUiState.Discovering((mdnsFound + scanFound).distinctBy { it.host })
+        val all = (mdnsFound + scanFound).distinctBy { it.host }
+        _discovered.value = all
+        if (isSearching) _uiState.value = ConnectionUiState.Discovering(all)
     }
 
-    fun connect(name: String, host: String, port: Int, token: String?) {
+    /** Connects to an address picked by the user; a PC paired before reuses its token. */
+    fun connect(name: String, host: String, port: Int) {
+        val known = savedDesktops.value.firstOrNull { it.host == host }
+            ?: savedDesktops.value.firstOrNull { it.isSamePc(discovered.value.firstOrNull { d -> d.host == host }?.id, name) }
+        connect(known?.copy(host = host, port = port) ?: SavedDesktop(name, host, port, token = ""), quiet = false)
+    }
+
+    /** [quiet]: a failed first attempt is not reported (auto-connect probes in the background). */
+    fun connect(target: SavedDesktop, quiet: Boolean) {
         sessionJob?.cancel()
         endSession = false
-        val target = SavedDesktop(name, host, port, token.orEmpty())
+        autoConnectPaused = false
         current = target
-        sessionJob = scope.launch { sessionLoop(target) }
+        sessionJob = scope.launch { sessionLoop(target, quiet) }
     }
 
-    fun reconnectSaved() {
-        val saved = savedDesktop.value ?: return
-        connect(saved.name, saved.host, saved.port, saved.token)
+    fun forget(desktop: SavedDesktop) {
+        scope.launch { prefs.forget(desktop) }
     }
 
     fun submitPin(pin: String) {
@@ -155,14 +182,21 @@ class RemoteSession(
         _errors.tryEmit(kind)
     }
 
+    /** User-initiated: also pauses auto-connect until the user connects again. */
     fun disconnect() {
+        autoConnectPaused = true
         sessionJob?.cancel()
         sessionJob = null
         scope.launch { client.disconnect() }
-        _uiState.value = ConnectionUiState.Idle
+        goIdle()
     }
 
-    private suspend fun sessionLoop(target: SavedDesktop) {
+    private fun goIdle() {
+        _uiState.value = ConnectionUiState.Idle
+        publishDiscovered()
+    }
+
+    private suspend fun sessionLoop(target: SavedDesktop, quiet: Boolean) {
         var attempt = 0
         while (attempt <= MAX_RECONNECT_ATTEMPTS) {
             if (attempt == 0) {
@@ -174,8 +208,8 @@ class RemoteSession(
             when (connectOnce(target)) {
                 SessionOutcome.FAILED -> {
                     if (attempt == 0) {
-                        _errors.tryEmit(ErrorKind.CONNECTION_FAILED)
-                        _uiState.value = ConnectionUiState.Idle
+                        if (!quiet) _errors.tryEmit(ErrorKind.CONNECTION_FAILED)
+                        goIdle()
                         return
                     }
                     attempt++
@@ -185,7 +219,7 @@ class RemoteSession(
             }
         }
         _errors.tryEmit(ErrorKind.CONNECTION_LOST)
-        _uiState.value = ConnectionUiState.Idle
+        goIdle()
     }
 
     private suspend fun connectOnce(target: SavedDesktop): SessionOutcome {
@@ -200,7 +234,7 @@ class RemoteSession(
             onSocketOpened()
             // Frame decoding (incl. base64 file chunks) stays off the main thread.
             withContext(Dispatchers.Default) {
-                incomingFrames.collect { onMessage(it, target) }
+                incomingFrames.collect { onMessage(it) }
             }
         } catch (e: CancellationException) {
             throw e
@@ -216,23 +250,36 @@ class RemoteSession(
             _uiState.value = ConnectionUiState.Pairing(attemptsLeft = 3)
             client.send(PairRequest(deviceName = deviceName))
         } else {
+            remember(target)
             _uiState.value = ConnectionUiState.Connected(target.name)
         }
     }
 
-    private suspend fun onMessage(message: Message, target: SavedDesktop) {
+    /** Records the address that just worked and bumps the PC to the front of the auto-connect order. */
+    private suspend fun remember(desktop: SavedDesktop) {
+        val updated = desktop.copy(lastUsedAt = clock())
+        current = updated
+        prefs.save(updated)
+    }
+
+    private suspend fun onMessage(message: Message) {
         when (message) {
             is PairSuccess -> {
-                val updated = target.copy(token = message.token)
-                current = updated
-                prefs.save(updated)
-                _uiState.value = ConnectionUiState.Connected(updated.name)
+                val target = current ?: return
+                remember(
+                    target.copy(
+                        token = message.token,
+                        name = message.desktopName.ifEmpty { target.name },
+                        id = message.desktopId.ifEmpty { target.id },
+                    ),
+                )
+                _uiState.value = ConnectionUiState.Connected(current?.name ?: target.name)
             }
             is PairFailure -> {
                 if (message.attemptsLeft <= 0) {
                     endSession = true
                     _errors.tryEmit(ErrorKind.PAIRING_REJECTED)
-                    _uiState.value = ConnectionUiState.Idle
+                    goIdle()
                 } else {
                     _uiState.value = ConnectionUiState.Pairing(message.attemptsLeft)
                 }
@@ -247,16 +294,16 @@ class RemoteSession(
         if (ack.ok) return
         when (ack.error) {
             ErrorCode.AUTH_REQUIRED -> {
-                // Stored token no longer valid — re-pair on this same connection.
+                // This PC no longer knows our token (e.g. "Unpair all"): forget it and re-pair on this connection.
+                current?.let { prefs.forget(it) }
                 current = current?.copy(token = "")
-                prefs.clear()
                 _uiState.value = ConnectionUiState.Pairing(attemptsLeft = 3)
                 client.send(PairRequest(deviceName = deviceName))
             }
             ErrorCode.BUSY -> {
                 endSession = true
                 _errors.tryEmit(ErrorKind.DESKTOP_BUSY)
-                _uiState.value = ConnectionUiState.Idle
+                goIdle()
             }
             ErrorCode.UNSUPPORTED_OS -> _errors.tryEmit(ErrorKind.UNSUPPORTED_OS)
             ErrorCode.NOT_FOUND -> _errors.tryEmit(ErrorKind.APP_NOT_FOUND)

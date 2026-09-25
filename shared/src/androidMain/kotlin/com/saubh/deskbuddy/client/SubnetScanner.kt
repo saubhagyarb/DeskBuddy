@@ -64,7 +64,7 @@ class SubnetScanner(
         return runCatching {
             withTimeout(INFO_TIMEOUT_MS) {
                 val info = WireCodec.decodeInfo(http.get("http://$host:$port/info").bodyAsText())
-                DiscoveredDesktop(info.name, host, info.port)
+                DiscoveredDesktop(info.name, host, info.port, info.id)
             }
         }.getOrNull()
     }

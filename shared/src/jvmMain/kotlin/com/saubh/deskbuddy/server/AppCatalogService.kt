@@ -73,7 +73,9 @@ class AppCatalogService(
         val shortcuts = store.load()
         val known = installed.orEmpty()
         val extra = shortcuts.filter { s -> known.none { it.id == s.id } }
-        val all = (known + extra).sortedBy { it.name.lowercase() }
+        // A shortcut saved under an older id (e.g. a .lnk path) hides the same-named listed app, so it is not shown twice.
+        val listed = known.filterNot { app -> extra.any { it.name.equals(app.name, ignoreCase = true) } }
+        val all = (listed + extra).sortedBy { it.name.lowercase() }
         val icons = shortcuts.mapNotNull { app -> runCatching { iconFor(app) }.getOrNull()?.let { app.id to it } }.toMap()
         return AppCatalog(all, shortcuts.map { it.id }, icons).also { _catalog.value = it }
     }
