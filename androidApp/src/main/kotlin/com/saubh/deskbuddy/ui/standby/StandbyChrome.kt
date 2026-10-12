@@ -18,7 +18,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -144,28 +144,24 @@ fun Modifier.blankTaps(onPress: () -> Unit, onBlankTap: () -> Unit): Modifier {
     }
 }
 
-/** Power (with its Restart / Shut down menu) and close: a row in portrait, a column in landscape. */
+/** Power (Restart / Shut down) and close: a column on the right side. */
 @Composable
 fun StandbyTopActions(
     connected: Boolean,
-    powerMenuOpen: Boolean,
-    onPowerMenuChange: (Boolean) -> Unit,
     onPower: (PowerAction) -> Unit,
     onExit: () -> Unit,
-    vertical: Boolean,
     modifier: Modifier = Modifier,
-    spacing: Dp = 8.dp,
+    spacing: Dp = 12.dp,
 ) {
-    val buttons: @Composable () -> Unit = {
-        StandbyPowerButton(enabled = connected, expanded = powerMenuOpen, onExpandedChange = onPowerMenuChange, onPower = onPower)
-        FilledTonalIconButton(onClick = onExit) {
-            Icon(KonnektIcons.Close, contentDescription = stringResource(R.string.cd_exit_standby))
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(spacing), horizontalAlignment = Alignment.CenterHorizontally) {
+        FilledTonalIconButton(onClick = { onPower(PowerAction.SHUTDOWN) }, enabled = connected, modifier = Modifier.size(64.dp)) {
+            Icon(KonnektIcons.Power, contentDescription = stringResource(R.string.power_shutdown), modifier = Modifier.size(32.dp))
         }
-    }
-    // Landscape stacks them in a slim end column: width is plentiful there, height is not.
-    if (vertical) {
-        Column(modifier, verticalArrangement = Arrangement.spacedBy(spacing), horizontalAlignment = Alignment.CenterHorizontally) { buttons() }
-    } else {
-        Row(modifier, horizontalArrangement = Arrangement.spacedBy(spacing), verticalAlignment = Alignment.CenterVertically) { buttons() }
+        FilledTonalIconButton(onClick = { onPower(PowerAction.RESTART) }, enabled = connected, modifier = Modifier.size(64.dp)) {
+            Icon(KonnektIcons.RestartAlt, contentDescription = stringResource(R.string.power_restart), modifier = Modifier.size(32.dp))
+        }
+        FilledTonalIconButton(onClick = onExit, modifier = Modifier.size(64.dp)) {
+            Icon(KonnektIcons.Close, contentDescription = stringResource(R.string.cd_exit_standby), modifier = Modifier.size(32.dp))
+        }
     }
 }

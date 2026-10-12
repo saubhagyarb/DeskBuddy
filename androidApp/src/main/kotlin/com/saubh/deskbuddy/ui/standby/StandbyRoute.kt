@@ -6,7 +6,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -130,16 +129,13 @@ fun StandbyScreen(state: StandbyUiState, actions: StandbyActions, chromeAlwaysVi
     var chromeShown by rememberSaveable { mutableStateOf(true) }
     var autoHideDone by rememberSaveable { mutableStateOf(false) }
     var interacted by remember { mutableStateOf(false) }
-    var powerMenuOpen by remember { mutableStateOf(false) }
-    // A disabled button cannot close its own menu; without this the chrome would be pinned on.
-    LaunchedEffect(state.connected) { if (!state.connected) powerMenuOpen = false }
     LaunchedEffect(Unit) {
         if (autoHideDone) return@LaunchedEffect
         delay(CHROME_AUTO_HIDE_MS)
-        if (!interacted && !powerMenuOpen) chromeShown = false
+        if (!interacted) chromeShown = false
         autoHideDone = true
     }
-    val chrome = chromeShown || powerMenuOpen || chromeAlwaysVisible
+    val chrome = chromeShown || chromeAlwaysVisible
     val pcPage = pager.currentPage != StandbyMode.CLOCK.ordinal
     val pageEntry = remember(entryPage, reducedMotion) { PageEntry(entryPage, entryProgress, reducedMotion) }
 
@@ -180,18 +176,12 @@ fun StandbyScreen(state: StandbyUiState, actions: StandbyActions, chromeAlwaysVi
             )
         }
         ChromeItem(chrome, ChromeEdge.TOP_END, reducedMotion, Modifier.align(Alignment.TopEnd).padding(top = EDGE, end = EDGE)) {
-            // Portrait: as tall as the rail, so both sit centred on one line.
-            Row(if (wide) Modifier else Modifier.height(itemSize + 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                StandbyTopActions(
-                    connected = state.connected,
-                    powerMenuOpen = powerMenuOpen,
-                    onPowerMenuChange = { powerMenuOpen = it },
-                    onPower = actions::onPower,
-                    onExit = onExit,
-                    vertical = wide,
-                    spacing = if (narrow) ACTION_GAP_NARROW else ACTION_GAP,
-                )
-            }
+            StandbyTopActions(
+                connected = state.connected,
+                onPower = actions::onPower,
+                onExit = onExit,
+                spacing = if (narrow) ACTION_GAP_NARROW else ACTION_GAP,
+            )
         }
         ChromeItem(
             chrome && pcPage, ChromeEdge.BOTTOM, reducedMotion,
