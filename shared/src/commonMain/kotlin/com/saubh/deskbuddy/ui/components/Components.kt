@@ -69,7 +69,7 @@ fun LetterAvatar(name: String, size: Dp, shape: Shape, container: Color, onConta
     ShapeAvatar(shape, container, size) {
         Text(
             name.firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "•",
-            style = if (size >= 56.dp) MaterialTheme.typography.titleLargeEmphasized else MaterialTheme.typography.titleMediumEmphasized,
+            style = if (size >= 72.dp) MaterialTheme.typography.displaySmall else if (size >= 56.dp) MaterialTheme.typography.titleLargeEmphasized else MaterialTheme.typography.titleMediumEmphasized,
             color = onContainer,
         )
     }

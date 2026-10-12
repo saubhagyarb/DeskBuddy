@@ -30,7 +30,7 @@ fun AppIcon(name: String, icon: ByteArray?, size: Dp, shape: Shape, container: C
         LetterAvatar(name, size, shape, container, onContainer)
     } else {
         ShapeAvatar(shape, container, size) {
-            Image(decoded, contentDescription = null, modifier = Modifier.size(size * 0.62f))
+            Image(decoded, contentDescription = null, modifier = Modifier.size(size * 0.85f))
         }
     }
 }

@@ -53,8 +53,8 @@ private val ACTION_GAP_NARROW = 4.dp
 private val EDGE = 12.dp
 
 /** Fixed page insets that keep PC content clear of the floating chrome; they never change when the chrome toggles. */
-private val PortraitPagePadding = PaddingValues(start = 16.dp, end = 16.dp, top = 88.dp, bottom = 112.dp)
-private val LandscapePagePadding = PaddingValues(start = 96.dp, end = 88.dp, top = 16.dp, bottom = 104.dp)
+private val PortraitPagePadding = PaddingValues(start = 16.dp, end = 16.dp, top = 88.dp, bottom = 16.dp)
+private val LandscapePagePadding = PaddingValues(start = 96.dp, end = 88.dp, top = 16.dp, bottom = 16.dp)
 
 /** Always-dark, always-on, full-screen dock screen. Back or the close button exits. */
 @Composable

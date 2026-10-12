@@ -37,15 +37,15 @@ import com.saubh.deskbuddy.protocol.DesktopApp
 import com.saubh.deskbuddy.ui.components.AppIcon
 
 private val KEY_GAP = 12.dp
-private val KEY_MIN_HEIGHT = 96.dp
-private val COMPACT_MIN_KEY = 88.dp
+private val KEY_MIN_HEIGHT = 120.dp
+private val COMPACT_MIN_KEY = 104.dp
 
-/** A regular key is 116dp tall (16 + 56 icon + 8 + 20 label + 16); below two such rows the grid switches to compact keys. */
-private val COMPACT_BELOW = 116.dp * 2 + KEY_GAP
+/** A regular key is 132dp tall (16 + 72 icon + 8 + 20 label + 16); below two such rows the grid switches to compact keys. */
+private val COMPACT_BELOW = 132.dp * 2 + KEY_GAP
 
 /**
- * Pinned shortcuts as keys sized to their content (at least 96dp tall); a dot marks apps already open on the PC.
- * Tap focuses or launches. On short grids (e.g. 800×360dp landscape) the keys turn compact, 96dp tall, so two
+ * Pinned shortcuts as keys sized to their content (at least 120dp tall); a dot marks apps already open on the PC.
+ * Tap focuses or launches. On short grids (e.g. 800×360dp landscape) the keys turn compact, 104dp tall, so two
  * whole rows fit instead of one and a sliver.
  */
 @Composable
@@ -55,7 +55,7 @@ fun AppGrid(
     running: Set<String>,
     onActivate: (String) -> Unit,
     modifier: Modifier = Modifier,
-    minKey: Dp = 112.dp,
+    minKey: Dp = 128.dp,
 ) {
     if (shortcuts.isEmpty()) {
         Box(modifier, contentAlignment = Alignment.Center) {
@@ -101,7 +101,7 @@ private fun AppKey(app: DesktopApp, icon: ByteArray?, running: Boolean, compact:
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            AppIcon(app.name, icon, if (compact) 40.dp else 56.dp, MaterialTheme.shapes.large, scheme.secondaryContainer, scheme.onSecondaryContainer)
+            AppIcon(app.name, icon, if (compact) 48.dp else 72.dp, MaterialTheme.shapes.large, scheme.secondaryContainer, scheme.onSecondaryContainer)
             Text(
                 app.name,
                 style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
