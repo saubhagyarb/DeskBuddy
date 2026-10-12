@@ -16,8 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import org.jetbrains.compose.resources.painterResource
 
-import deskbuddy.shared.generated.resources.Res
-import deskbuddy.shared.generated.resources.compose_multiplatform
+import konnekt.shared.generated.resources.Res
+import konnekt.shared.generated.resources.compose_multiplatform
 
 @Composable
 @Preview
