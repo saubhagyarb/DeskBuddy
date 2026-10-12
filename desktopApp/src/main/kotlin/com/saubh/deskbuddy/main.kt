@@ -1,9 +1,11 @@
 package com.saubh.deskbuddy
 
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Tray
@@ -11,12 +13,16 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.saubh.deskbuddy.server.StartupRegistration
+import com.saubh.deskbuddy.server.keyboard.TypingState
+import com.saubh.deskbuddy.ui.KeyboardOverlay
 import com.saubh.deskbuddy.ui.ServerScreen
 import com.saubh.deskbuddy.ui.rememberAppIconPainter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Runs in the tray so phones can keep connecting while the window is closed. Launched at
@@ -33,42 +39,66 @@ fun main(args: Array<String>) {
 
     application {
         var visible by remember { mutableStateOf(!background) }
+        var quitting by remember { mutableStateOf(false) }
+        val uiScope = rememberCoroutineScope()
         val windowState = rememberWindowState(width = 960.dp, height = 640.dp)
         val show = {
             visible = true
             windowState.isMinimized = false
         }
-        val quit = {
-            controller.stop()
-            scope.cancel()
-            exitApplication()
+        val quit: () -> Unit = {
+            if (!quitting) {
+                quitting = true // tray icon and window disappear at once; shutdown finishes in the background
+                uiScope.launch {
+                    withTimeoutOrNull(QUIT_TIMEOUT_MS) { controller.stop() }
+                    scope.cancel()
+                    exitApplication()
+                }
+            }
         }
         val appIcon = rememberAppIconPainter()
         LaunchedEffect(Unit) { controller.showRequests.collect { show() } }
 
-        Tray(
-            icon = appIcon,
-            tooltip = "DeskBuddy",
-            onAction = show,
-            menu = {
-                Item("Open DeskBuddy", onClick = show)
-                Item("Quit", onClick = quit)
-            },
-        )
-        Window(
-            onCloseRequest = { visible = false },
-            visible = visible,
-            title = "DeskBuddy",
-            icon = appIcon,
-            state = windowState,
-        ) {
-            LaunchedEffect(visible) {
-                if (visible) {
-                    window.toFront()
-                    window.requestFocus()
-                }
+        if (!quitting) {
+            val typing by controller.typingState.collectAsState()
+            val echo by controller.typingEcho.collectAsState()
+            Tray(
+                icon = appIcon,
+                tooltip = "KonneKt",
+                onAction = show,
+                menu = {
+                    Item("Open KonneKt", onClick = show)
+                    Item(controller.hotkeyLabel?.let { "Type on phone ($it)" } ?: "Type on phone", onClick = controller::togglePhoneTyping)
+                    Item("Quit", onClick = quit)
+                },
+            )
+            if (typing != TypingState.Idle) {
+                KeyboardOverlay(
+                    state = typing,
+                    echo = echo,
+                    hotkeyLabel = controller.hotkeyLabel,
+                    onKey = controller::onTypingKey,
+                    onFocusLost = controller::onTypingFocusLost,
+                    onDismiss = controller::dismissTypingNotice,
+                )
             }
-            ServerScreen(controller)
+            Window(
+                onCloseRequest = { visible = false },
+                visible = visible,
+                title = "KonneKt",
+                icon = appIcon,
+                state = windowState,
+            ) {
+                LaunchedEffect(visible) {
+                    if (visible) {
+                        window.toFront()
+                        window.requestFocus()
+                    }
+                }
+                ServerScreen(controller)
+            }
         }
     }
 }
+
+private const val QUIT_TIMEOUT_MS = 3_000L

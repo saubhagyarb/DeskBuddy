@@ -19,3 +19,16 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+# kotlinx.serialization: protocol and prefs models are looked up through generated serializers.
+-keepclassmembers @kotlinx.serialization.Serializable class com.saubh.deskbuddy.** {
+    *** Companion;
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-keep,includedescriptorclasses class com.saubh.deskbuddy.**$$serializer { *; }
+-keepclassmembers class com.saubh.deskbuddy.** {
+    *** Companion;
+}
+
+# Ktor CIO references JVM-only classes that Android never loads.
+-dontwarn java.lang.management.**
+-dontwarn org.slf4j.impl.StaticLoggerBinder

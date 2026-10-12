@@ -19,9 +19,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -34,7 +36,8 @@ import androidx.compose.ui.unit.dp
 import com.saubh.deskbuddy.R
 import com.saubh.deskbuddy.media.MediaUiState
 import com.saubh.deskbuddy.protocol.MediaAction
-import com.saubh.deskbuddy.ui.theme.DeskBuddyIcons
+import com.saubh.deskbuddy.ui.theme.KonnektIcons
+import kotlinx.coroutines.delay
 
 /** Seek slider with elapsed / total labels. Local value while dragging; seeks on release. */
 @Composable
@@ -43,11 +46,12 @@ fun Timeline(state: MediaUiState, onSeek: (Long) -> Unit, modifier: Modifier = M
     val range = 0f..maxOf(duration.toFloat(), 1f)
     var dragging by remember { mutableStateOf(false) }
     var dragValue by remember { mutableFloatStateOf(0f) }
-    val shown = if (dragging) dragValue.toLong() else state.positionMs
+    val position by rememberPlaybackPosition(state)
+    val shown = if (dragging) dragValue.toLong() else position
     val seekCd = stringResource(R.string.cd_seek)
     Column(modifier) {
         Slider(
-            value = (if (dragging) dragValue else state.positionMs.toFloat()).coerceIn(range),
+            value = (if (dragging) dragValue else position.toFloat()).coerceIn(range),
             onValueChange = {
                 dragging = true
                 dragValue = it
@@ -69,6 +73,22 @@ fun Timeline(state: MediaUiState, onSeek: (Long) -> Unit, modifier: Modifier = M
     }
 }
 
+/** Interpolated position; ticks only while this composable is on screen and the PC is playing. */
+@Composable
+private fun rememberPlaybackPosition(state: MediaUiState): State<Long> =
+    produceState(
+        initialValue = state.positionAt(System.currentTimeMillis()),
+        state.receivedAtMs, state.nowPlaying?.positionMs, state.isPlaying, state.durationMs,
+    ) {
+        value = state.positionAt(System.currentTimeMillis())
+        while (state.isPlaying) {
+            delay(POSITION_TICK_MS)
+            value = state.positionAt(System.currentTimeMillis())
+        }
+    }
+
+private const val POSITION_TICK_MS = 500L
+
 /** Previous / play-pause (hero) / next as a connected expressive button group. */
 @Composable
 fun Transport(state: MediaUiState, onMedia: (MediaAction) -> Unit, modifier: Modifier = Modifier) {
@@ -78,16 +98,16 @@ fun Transport(state: MediaUiState, onMedia: (MediaAction) -> Unit, modifier: Mod
             val play = remember { MutableInteractionSource() }
             val next = remember { MutableInteractionSource() }
             
-            TonalControl(DeskBuddyIcons.SkipPrevious, R.string.cd_previous, prev, Modifier.animateWidth(prev).align(Alignment.CenterVertically)) {
+            TonalControl(KonnektIcons.SkipPrevious, R.string.cd_previous, prev, Modifier.animateWidth(prev).align(Alignment.CenterVertically)) {
                 onMedia(MediaAction.PREVIOUS)
             }
             HeroControl(
-                if (state.isPlaying) DeskBuddyIcons.Pause else DeskBuddyIcons.Play,
+                if (state.isPlaying) KonnektIcons.Pause else KonnektIcons.Play,
                 R.string.cd_play_pause,
                 play,
                 Modifier.animateWidth(play).align(Alignment.CenterVertically),
             ) { onMedia(MediaAction.PLAY_PAUSE) }
-            TonalControl(DeskBuddyIcons.SkipNext, R.string.cd_next, next, Modifier.animateWidth(next).align(Alignment.CenterVertically)) {
+            TonalControl(KonnektIcons.SkipNext, R.string.cd_next, next, Modifier.animateWidth(next).align(Alignment.CenterVertically)) {
                 onMedia(MediaAction.NEXT)
             }
         }

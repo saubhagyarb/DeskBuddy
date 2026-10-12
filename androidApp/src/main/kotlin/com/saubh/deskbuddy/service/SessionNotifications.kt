@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.provider.Settings
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -17,6 +18,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.saubh.deskbuddy.MainActivity
 import com.saubh.deskbuddy.R
+import com.saubh.deskbuddy.ime.KeyboardPickerActivity
 import com.saubh.deskbuddy.protocol.NowPlayingCommand
 import com.saubh.deskbuddy.protocol.PlaybackStatus
 
@@ -25,8 +27,12 @@ class SessionNotifications(private val context: Context) {
 
     companion object {
         const val ID = 1
+        const val KEYBOARD_ID = 2
+        const val DOCK_ID = 3
         private const val STATUS_CHANNEL = "connection"
         private const val MEDIA_CHANNEL = "now_playing"
+        private const val KEYBOARD_CHANNEL = "pc_keyboard"
+        private const val DOCK_CHANNEL = "dock"
     }
 
     private val manager = NotificationManagerCompat.from(context)
@@ -40,6 +46,14 @@ class SessionNotifications(private val context: Context) {
                     .build(),
                 NotificationChannelCompat.Builder(MEDIA_CHANNEL, NotificationManagerCompat.IMPORTANCE_LOW)
                     .setName(context.getString(R.string.notif_channel_media))
+                    .setShowBadge(false)
+                    .build(),
+                NotificationChannelCompat.Builder(KEYBOARD_CHANNEL, NotificationManagerCompat.IMPORTANCE_HIGH)
+                    .setName(context.getString(R.string.notif_channel_keyboard))
+                    .setShowBadge(false)
+                    .build(),
+                NotificationChannelCompat.Builder(DOCK_CHANNEL, NotificationManagerCompat.IMPORTANCE_HIGH)
+                    .setName(context.getString(R.string.notif_channel_dock))
                     .setShowBadge(false)
                     .build(),
             ),
@@ -91,10 +105,59 @@ class SessionNotifications(private val context: Context) {
     }
 
     /** Posting needs the notification permission on Android 13+; without it the service still runs. */
-    fun post(notification: Notification) {
+    /**
+     * Heads-up prompt: Android cannot switch keyboards for us, so a tap opens the keyboard picker.
+     * The picker only lists enabled keyboards, so until KonneKt Keyboard is enabled the tap opens
+     * the system keyboard settings instead.
+     */
+    fun keyboardPrompt(imeEnabled: Boolean): Notification {
+        val intent = if (imeEnabled) {
+            Intent(context, KeyboardPickerActivity::class.java)
+        } else {
+            Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)
+        }.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val pending = PendingIntent.getActivity(context, KEYBOARD_ID, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val text = if (imeEnabled) R.string.notif_keyboard_text else R.string.notif_keyboard_enable_text
+        return NotificationCompat.Builder(context, KEYBOARD_CHANNEL)
+            .setSmallIcon(R.drawable.ic_stat_deskbuddy)
+            .setContentTitle(context.getString(R.string.notif_keyboard_title))
+            .setContentText(context.getString(text))
+            .setContentIntent(pending)
+            .setAutoCancel(true)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+    }
+
+    /**
+     * Docked but Android will not let a background app open a screen (no "Display over other apps").
+     * The full-screen intent opens standby straight away on a locked phone; otherwise it is a heads-up to tap.
+     */
+    fun dockPrompt(): Notification {
+        val pending = PendingIntent.getActivity(
+            context,
+            DOCK_ID,
+            MainActivity.autoStandbyIntent(context),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        return NotificationCompat.Builder(context, DOCK_CHANNEL)
+            .setSmallIcon(R.drawable.ic_stat_deskbuddy)
+            .setContentTitle(context.getString(R.string.notif_dock_title))
+            .setContentText(context.getString(R.string.notif_dock_text))
+            .setContentIntent(pending)
+            .setFullScreenIntent(pending, true)
+            .setAutoCancel(true)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+    }
+
+    fun cancel(id: Int) = context.getSystemService(NotificationManager::class.java).cancel(id)
+
+    fun post(notification: Notification, id: Int = ID) {
         val allowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-        if (allowed) context.getSystemService(NotificationManager::class.java).notify(ID, notification)
+        if (allowed) context.getSystemService(NotificationManager::class.java).notify(id, notification)
     }
 
     private fun action(icon: Int, label: Int, intentAction: String): Notification.Action {

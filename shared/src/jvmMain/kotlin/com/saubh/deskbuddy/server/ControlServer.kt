@@ -43,6 +43,8 @@ class ControlServer(
     private val desktopId: String = "",
     /** A second copy of the app asks the running one (over loopback) to show its window. */
     private val onShowRequested: () -> Unit = {},
+    /** A connection finished authenticating (a new phone, or the same phone on a fresh socket). */
+    private val onPhoneAuthenticated: (deviceName: String) -> Unit = {},
 ) {
     private companion object {
         const val PUSH_TIMEOUT_MS = 5_000L
@@ -104,8 +106,12 @@ class ControlServer(
                     try {
                         for (frame in incoming) {
                             if (frame !is Frame.Text) continue
-                            val reply = runCatching { session.onMessage(WireCodec.decode(frame.readText())) }
-                                .getOrElse { SessionReply(Ack(ok = false, error = ErrorCode.INTERNAL)) }
+                            val text = frame.readText()
+                            val reply = runCatching { session.onMessage(WireCodec.decode(text)) }
+                                .getOrElse { e ->
+                                    ServerLog.write(undecodableFrameLog(e, text.length))
+                                    SessionReply(Ack(ok = false, error = ErrorCode.INTERNAL))
+                                }
                             reply.message?.let { connection.outbound.send(it) }
                             if (reply.closeConnection) {
                                 connection.outbound.close()
@@ -166,6 +172,7 @@ class ControlServer(
                 stale.socket.launch { stale.socket.close(CloseReason(CloseReason.Codes.NORMAL, "replaced")) }
             }
             publish()
+            onPhoneAuthenticated(deviceName)
         }
     }
 
@@ -179,3 +186,7 @@ class ControlServer(
         }
     }
 }
+
+/** Decode errors echo the JSON input, which carries the pairing token: log only the error type and frame size. */
+internal fun undecodableFrameLog(error: Throwable, frameLength: Int): String =
+    "Undecodable frame: ${error::class.simpleName} (${frameLength} chars)"

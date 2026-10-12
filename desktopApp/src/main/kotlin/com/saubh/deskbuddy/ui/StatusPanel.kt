@@ -1,9 +1,11 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalLayoutApi::class)
 
 package com.saubh.deskbuddy.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -35,11 +37,11 @@ import com.saubh.deskbuddy.server.ServerState
 import com.saubh.deskbuddy.ui.components.IconAvatar
 import com.saubh.deskbuddy.ui.components.MediumOutlinedButton
 import com.saubh.deskbuddy.ui.components.cookieShape
-import com.saubh.deskbuddy.ui.theme.DeskBuddyIcons
+import com.saubh.deskbuddy.ui.theme.KonnektIcons
 import kotlinx.coroutines.delay
 
-/** "Start with Windows" switch state; null hides the card (non-Windows). */
-data class StartupSetting(val enabled: Boolean, val onChange: (Boolean) -> Unit)
+/** Start-at-login switch state; null hides the card (Linux). [inMenuBar] words it for macOS. */
+data class StartupSetting(val enabled: Boolean, val onChange: (Boolean) -> Unit, val inMenuBar: Boolean = false)
 
 /** Home pane: one hero card whose content follows the server state, address chips, and the startup switch. */
 @Composable
@@ -49,6 +51,7 @@ fun StatusPanel(
     ipAddress: String,
     port: Int,
     mediaHelperAvailable: Boolean,
+    keyboardLabel: String,
     startup: StartupSetting?,
     onUnpairAll: () -> Unit,
 ) {
@@ -58,23 +61,29 @@ fun StatusPanel(
             is ServerState.Pairing -> PairingHero(state.pin)
             is ServerState.Connected -> ConnectedHero(state.devices, onUnpairAll)
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             AssistChip(
                 onClick = {},
                 label = { Text(hostName) },
-                leadingIcon = { Icon(DeskBuddyIcons.Computer, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                leadingIcon = { Icon(KonnektIcons.Computer, contentDescription = null, modifier = Modifier.size(18.dp)) },
                 shape = CircleShape,
             )
             AssistChip(
                 onClick = {},
                 label = { Text("$ipAddress : $port") },
-                leadingIcon = { Icon(DeskBuddyIcons.Wifi, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                leadingIcon = { Icon(KonnektIcons.Wifi, contentDescription = null, modifier = Modifier.size(18.dp)) },
                 shape = CircleShape,
             )
             AssistChip(
                 onClick = {},
                 label = { Text(if (mediaHelperAvailable) "Now playing: on" else "Now playing: unavailable") },
-                leadingIcon = { Icon(DeskBuddyIcons.MusicNote, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                leadingIcon = { Icon(KonnektIcons.MusicNote, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                shape = CircleShape,
+            )
+            AssistChip(
+                onClick = {},
+                label = { Text(keyboardLabel) },
+                leadingIcon = { Icon(KonnektIcons.Keyboard, contentDescription = null, modifier = Modifier.size(18.dp)) },
                 shape = CircleShape,
             )
         }
@@ -104,7 +113,7 @@ private fun WaitingHero() {
         LoadingIndicator(Modifier.size(72.dp))
         Text("Waiting for your phone", style = MaterialTheme.typography.headlineSmallEmphasized)
         Text(
-            "Open DeskBuddy on your phone on the same Wi-Fi network. This PC will show up automatically, or connect by address.",
+            "Open KonneKt on your phone on the same Wi-Fi network. This PC will show up automatically, or connect by address.",
             style = MaterialTheme.typography.bodyLarge,
             color = scheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -143,7 +152,7 @@ private fun PairingHero(pin: String) {
 private fun ConnectedHero(devices: List<String>, onUnpairAll: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     HeroCard(scheme.surfaceContainerHigh) {
-        IconAvatar(DeskBuddyIcons.Smartphone, 80.dp, cookieShape(), scheme.primary, scheme.onPrimary)
+        IconAvatar(KonnektIcons.Smartphone, 80.dp, cookieShape(), scheme.primary, scheme.onPrimary)
         Text("Connected", style = MaterialTheme.typography.labelLargeEmphasized, color = scheme.primary)
         Text(devices.joinToString(", "), style = MaterialTheme.typography.headlineMediumEmphasized, textAlign = TextAlign.Center)
         if (devices.size > 1) {
@@ -155,7 +164,7 @@ private fun ConnectedHero(devices: List<String>, onUnpairAll: () -> Unit) {
             color = scheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        MediumOutlinedButton("Unpair all devices", onUnpairAll, icon = DeskBuddyIcons.Delete)
+        MediumOutlinedButton("Unpair all devices", onUnpairAll, icon = KonnektIcons.Delete)
     }
 }
 
@@ -173,9 +182,9 @@ private fun StartupCard(setting: StartupSetting) {
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Column(Modifier.weight(1f)) {
-                Text("Start with Windows", style = MaterialTheme.typography.titleMediumEmphasized)
+                Text(if (setting.inMenuBar) "Open at login" else "Start with Windows", style = MaterialTheme.typography.titleMediumEmphasized)
                 Text(
-                    "Runs in the tray after you sign in, so your phone reconnects on its own.",
+                    "Runs in the ${if (setting.inMenuBar) "menu bar" else "tray"} after you sign in, so your phone reconnects on its own.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = scheme.onSurfaceVariant,
                 )

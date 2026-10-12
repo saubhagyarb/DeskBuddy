@@ -29,7 +29,7 @@ class ClipboardShareController(
     private val now: () -> Long = System::currentTimeMillis,
 ) {
     private companion object {
-        const val CLIP_LABEL = "DeskBuddy"
+        const val CLIP_LABEL = "KonneKt"
     }
 
     private val _autoSync = MutableStateFlow(true)

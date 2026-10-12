@@ -38,7 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.saubh.deskbuddy.R
 import com.saubh.deskbuddy.media.MediaUiState
-import com.saubh.deskbuddy.ui.theme.DeskBuddyIcons
+import com.saubh.deskbuddy.ui.theme.KonnektIcons
 
 /** Mute toggle + volume slider + output device split button. Slider disabled until the PC reports audio state. */
 @Composable
@@ -67,7 +67,7 @@ fun VolumePanel(
                     modifier = Modifier.size(IconButtonDefaults.mediumContainerSize()).semantics { contentDescription = muteCd },
                 ) {
                     Icon(
-                        if (audio?.muted == true) DeskBuddyIcons.VolumeOff else DeskBuddyIcons.VolumeUp,
+                        if (audio?.muted == true) KonnektIcons.VolumeOff else KonnektIcons.VolumeUp,
                         contentDescription = null,
                         modifier = Modifier.size(IconButtonDefaults.mediumIconSize),
                     )
@@ -99,7 +99,7 @@ fun VolumePanel(
                     SplitButtonLayout(
                         leadingButton = {
                             SplitButtonDefaults.TonalLeadingButton(onClick = onPickDevice, modifier = Modifier.widthIn(max = 260.dp)) {
-                                Icon(DeskBuddyIcons.Speaker, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Icon(KonnektIcons.Speaker, contentDescription = null, modifier = Modifier.size(20.dp))
                                 Spacer(Modifier.width(8.dp))
                                 Text(
                                     state.currentDevice?.name ?: stringResource(R.string.media_output_device),
@@ -113,7 +113,7 @@ fun VolumePanel(
                                 checked = false,
                                 onCheckedChange = { onPickDevice() },
                                 modifier = Modifier.semantics { contentDescription = chooseCd },
-                            ) { Icon(DeskBuddyIcons.ExpandMore, contentDescription = null) }
+                            ) { Icon(KonnektIcons.ExpandMore, contentDescription = null) }
                         },
                     )
                 }

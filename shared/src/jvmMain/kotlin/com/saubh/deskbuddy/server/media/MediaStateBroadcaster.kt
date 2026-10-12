@@ -61,7 +61,7 @@ class MediaStateBroadcaster(
     }
 
     private fun snapshot(devices: List<AudioDevice>): AudioStateCommand? =
-        runCatching { AudioStateCommand(devices, audio.volume(), audio.isMuted()) }.getOrNull()
+        runCatching { audio.levels().let { AudioStateCommand(devices, it.volume, it.muted) } }.getOrNull()
 
     private fun audioChanges(): Flow<AudioStateCommand> = flow {
         var last: AudioStateCommand? = null

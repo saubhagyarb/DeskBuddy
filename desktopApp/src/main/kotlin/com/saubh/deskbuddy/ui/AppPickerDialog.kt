@@ -34,7 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.saubh.deskbuddy.protocol.DesktopApp
 import com.saubh.deskbuddy.ui.components.LetterAvatar
-import com.saubh.deskbuddy.ui.theme.DeskBuddyIcons
+import com.saubh.deskbuddy.ui.theme.KonnektIcons
 
 /** Searchable list of installed programs; picking one adds it as a shortcut. */
 @Composable
@@ -51,7 +51,7 @@ fun AppPickerDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = MaterialTheme.shapes.extraLarge,
-        icon = { Icon(DeskBuddyIcons.Apps, contentDescription = null, tint = scheme.primary) },
+        icon = { Icon(KonnektIcons.Apps, contentDescription = null, tint = scheme.primary) },
         title = { Text("Installed apps", style = MaterialTheme.typography.headlineSmallEmphasized) },
         text = {
             Column(Modifier.width(480.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -59,7 +59,7 @@ fun AppPickerDialog(
                     value = query,
                     onValueChange = { query = it },
                     placeholder = { Text("Search apps") },
-                    leadingIcon = { Icon(DeskBuddyIcons.Search, contentDescription = null) },
+                    leadingIcon = { Icon(KonnektIcons.Search, contentDescription = null) },
                     singleLine = true,
                     shape = CircleShape,
                     modifier = Modifier.fillMaxWidth(),
@@ -88,7 +88,7 @@ fun AppPickerDialog(
                                     Text(app.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text(app.id, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
-                                Icon(DeskBuddyIcons.Add, contentDescription = null, tint = scheme.primary)
+                                Icon(KonnektIcons.Add, contentDescription = null, tint = scheme.primary)
                             }
                         }
                     }
@@ -97,7 +97,7 @@ fun AppPickerDialog(
         },
         confirmButton = {
             TextButton(onClick = onRefresh) {
-                Icon(DeskBuddyIcons.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(KonnektIcons.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                 Text("Rescan", modifier = Modifier.padding(start = 8.dp))
             }
         },

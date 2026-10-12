@@ -6,12 +6,13 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 /**
- * "Start with Windows": a per-user `Run` registry value that launches this app hidden
- * ([BACKGROUND_ARG]) at sign-in. On first launch it is switched on by default.
+ * "Start at login": a per-user `Run` registry value on Windows, a LaunchAgent ([MacLaunchAgent]) on
+ * macOS. Either launches this app hidden ([BACKGROUND_ARG]) at sign-in. On first launch it is
+ * switched on by default.
  */
 class StartupRegistration(
     private val command: () -> String? = { currentLaunchCommand() },
-    private val registry: Registry = WindowsRegistry,
+    private val registry: Registry = if (HostOs.isMac()) MacLaunchAgent() else WindowsRegistry,
     private val initializedMarker: Path = Path.of(System.getProperty("user.home"), ".deskbuddy", "startup-initialized"),
 ) {
     interface Registry {
@@ -37,8 +38,8 @@ class StartupRegistration(
             System.getProperty("jpackage.app-path")?.takeIf { it.isNotBlank() }?.let { return "${quote(it)} $BACKGROUND_ARG" }
             val main = System.getProperty("sun.java.command")?.substringBefore(' ')?.takeIf { it.isNotBlank() } ?: return null
             val javaHome = System.getProperty("java.home") ?: return null
-            // The console-less launcher, so no terminal window flashes up at sign-in.
-            val launcher = listOf("javaw.exe", "java.exe").map { Path.of(javaHome, "bin", it) }.firstOrNull(Files::exists) ?: return null
+            // The console-less launcher on Windows, so no terminal window flashes up at sign-in; plain `java` on macOS.
+            val launcher = listOf("javaw.exe", "java.exe", "java").map { Path.of(javaHome, "bin", it) }.firstOrNull(Files::exists) ?: return null
             val jvmOptions = java.lang.management.ManagementFactory.getRuntimeMXBean().inputArguments
                 .filterNot { it.startsWith("-agentlib") || it.startsWith("-javaagent") || it.startsWith("-Xrunjdwp") }
             val target = if (main.endsWith(".jar", ignoreCase = true)) {

@@ -4,6 +4,7 @@ import com.saubh.deskbuddy.protocol.DesktopApp
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.nio.file.Path
 import java.util.Base64
 import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
@@ -18,7 +19,11 @@ class AppIconProvider(private val sizePx: Int = 64) {
         cache.computeIfAbsent(app.id) { Optional.ofNullable(render(it)) }.orElse(null)
 
     private fun render(id: String): String? = runCatching {
-        val image = (if (StartApps.isAppsFolderId(id)) ShellItemImage.render(id, sizePx) else fileIcon(id)) ?: return null
+        val image = when {
+            StartApps.isAppsFolderId(id) -> ShellItemImage.render(id, sizePx)
+            HostOs.isMac() && MacAppIcon.isBundle(id) -> MacAppIcon.render(Path.of(id), sizePx) ?: fileIcon(id)
+            else -> fileIcon(id)
+        } ?: return null
         ByteArrayOutputStream().use { out ->
             ImageIO.write(image, "png", out)
             Base64.getEncoder().encodeToString(out.toByteArray())

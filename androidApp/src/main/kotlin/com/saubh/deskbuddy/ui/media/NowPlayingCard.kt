@@ -42,7 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.saubh.deskbuddy.R
 import com.saubh.deskbuddy.media.MediaUiState
 import com.saubh.deskbuddy.protocol.PlaybackStatus
-import com.saubh.deskbuddy.ui.theme.DeskBuddyIcons
+import com.saubh.deskbuddy.ui.theme.KonnektIcons
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -60,7 +60,7 @@ fun NowPlayingArtwork(artwork: ByteArray?, size: Dp, placeholderContainer: Color
         Image(decoded, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(size).clip(shape))
     } else {
         Box(Modifier.size(size).clip(shape).background(placeholderContainer), contentAlignment = Alignment.Center) {
-            Icon(DeskBuddyIcons.MusicNote, contentDescription = null, tint = placeholderContent, modifier = Modifier.size(size / 2))
+            Icon(KonnektIcons.MusicNote, contentDescription = null, tint = placeholderContent, modifier = Modifier.size(size / 2))
         }
     }
 }

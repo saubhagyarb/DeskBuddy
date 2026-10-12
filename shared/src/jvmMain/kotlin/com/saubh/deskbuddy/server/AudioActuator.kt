@@ -2,6 +2,8 @@ package com.saubh.deskbuddy.server
 
 import com.saubh.deskbuddy.protocol.AudioDevice
 
+data class AudioLevels(val volume: Int, val muted: Boolean)
+
 /** Output (render) endpoints and the master volume of the current default one. */
 interface AudioActuator {
     fun devices(): List<AudioDevice>
@@ -11,6 +13,8 @@ interface AudioActuator {
     fun isMuted(): Boolean
     /** False when [id] is not a known render endpoint. */
     fun setDefaultDevice(id: String): Boolean
+    /** Volume and mute together; implementations may read both in one call. */
+    fun levels(): AudioLevels = AudioLevels(volume(), isMuted())
 }
 
 class UnsupportedAudioActuator(private val osName: String) : AudioActuator {

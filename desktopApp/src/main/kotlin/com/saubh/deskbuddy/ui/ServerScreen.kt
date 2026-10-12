@@ -30,13 +30,13 @@ import com.saubh.deskbuddy.DesktopController
 import com.saubh.deskbuddy.server.ServerState
 import com.saubh.deskbuddy.ui.components.IconAvatar
 import com.saubh.deskbuddy.ui.components.cookieShape
-import com.saubh.deskbuddy.ui.theme.DeskBuddyIcons
-import com.saubh.deskbuddy.ui.theme.DeskBuddyTheme
+import com.saubh.deskbuddy.ui.theme.KonnektIcons
+import com.saubh.deskbuddy.ui.theme.KonnektTheme
 
 private enum class Destination(val label: String, val icon: ImageVector, val title: String, val subtitle: String) {
-    STATUS("Status", DeskBuddyIcons.Smartphone, "Your phone", "Pairing and connection"),
-    SHARE("Share", DeskBuddyIcons.ContentPaste, "Share", "Clipboard, text and files"),
-    SHORTCUTS("Shortcuts", DeskBuddyIcons.Apps, "App shortcuts", "Programs your phone can launch with one tap"),
+    STATUS("Status", KonnektIcons.Smartphone, "Your phone", "Pairing and connection"),
+    SHARE("Share", KonnektIcons.ContentPaste, "Share", "Clipboard, text and files"),
+    SHORTCUTS("Shortcuts", KonnektIcons.Apps, "App shortcuts", "Programs your phone can launch with one tap"),
 }
 
 /** Desktop window: wide navigation rail on the left, one pane on the right. */
@@ -45,7 +45,8 @@ fun ServerScreen(controller: DesktopController) {
     val state by controller.serverState.collectAsState()
     val notice by controller.notice.collectAsState()
     val helperAvailable by controller.mediaHelperAvailable.collectAsState()
-    val startWithWindows by controller.startWithWindows.collectAsState()
+    val startAtLogin by controller.startAtLogin.collectAsState()
+    val hotkey by controller.hotkeyAvailable.collectAsState()
     val snackbar = remember { SnackbarHostState() }
     var destination by remember { mutableStateOf(Destination.STATUS) }
 
@@ -55,14 +56,14 @@ fun ServerScreen(controller: DesktopController) {
         controller.clearNotice()
     }
 
-    DeskBuddyTheme {
+    KonnektTheme {
         Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
             Row(Modifier.fillMaxSize().padding(padding)) {
                 WideNavigationRail(
                     header = {
                         val scheme = MaterialTheme.colorScheme
                         Box(Modifier.padding(start = 24.dp, top = 8.dp, bottom = 16.dp)) {
-                            IconAvatar(DeskBuddyIcons.Computer, 48.dp, cookieShape(), scheme.primaryContainer, scheme.onPrimaryContainer)
+                            IconAvatar(KonnektIcons.Computer, 48.dp, cookieShape(), scheme.primaryContainer, scheme.onPrimaryContainer)
                         }
                     },
                 ) {
@@ -86,7 +87,16 @@ fun ServerScreen(controller: DesktopController) {
                                 ipAddress = controller.ipAddress,
                                 port = controller.port,
                                 mediaHelperAvailable = helperAvailable,
-                                startup = if (controller.isWindows) StartupSetting(startWithWindows, controller::setStartWithWindows) else null,
+                                keyboardLabel = when {
+                                    controller.hotkeyLabel == null -> "Keyboard: tray menu → Type on phone"
+                                    hotkey -> "Keyboard: ${controller.hotkeyLabel}"
+                                    else -> "Keyboard: hotkey unavailable — use the tray menu"
+                                },
+                                startup = if (controller.supportsStartAtLogin) {
+                                    StartupSetting(startAtLogin, controller::setStartAtLogin, inMenuBar = controller.isMac)
+                                } else {
+                                    null
+                                },
                                 onUnpairAll = controller::unpairAll,
                             )
                             Destination.SHARE -> SharePanel(controller)

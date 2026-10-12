@@ -23,7 +23,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +35,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -65,6 +68,7 @@ class RemoteSession(
     val uiState: StateFlow<ConnectionUiState> = _uiState.asStateFlow()
 
     private val _errors = MutableSharedFlow<ErrorKind>(extraBufferCapacity = 8)
+    private val errorThrottle = ErrorThrottle(clock = clock)
     val errors: SharedFlow<ErrorKind> = _errors.asSharedFlow()
 
     /** Desktop-initiated messages: [Push] and [AppCatalog]. */
@@ -115,12 +119,16 @@ class RemoteSession(
         if (discoveryJob != null) return
         discoveryJob = scope.launch {
             launch {
-                discovery.discover()
-                    .catch { /* discovery failure is non-fatal; the sweep and manual IP still work */ }
-                    .collect { desktops ->
-                        mdnsFound = desktops
-                        publishDiscovered()
-                    }
+                // NSD multicast costs battery and is only needed while nothing is connected.
+                connected.collectLatest { isConnected ->
+                    if (isConnected) return@collectLatest
+                    discovery.discover()
+                        .catch { /* discovery failure is non-fatal; the sweep and manual IP still work */ }
+                        .collect { desktops ->
+                            mdnsFound = desktops
+                            publishDiscovered()
+                        }
+                }
             }
             launch {
                 delay(SCAN_INITIAL_DELAY_MS)
@@ -167,19 +175,36 @@ class RemoteSession(
         scope.launch { client.send(PairAttempt(pin)) }
     }
 
-    /** Sends an authenticated command. Returns false (and reports) when not connected. */
+    /**
+     * Sends an authenticated command. Returns false (and reports) when not connected. A socket that
+     * died a moment ago (before the UI state caught up) also returns false instead of throwing, so a
+     * long-lived sender such as the keyboard outbox survives a Wi-Fi blip.
+     */
     override suspend fun send(command: Command): Boolean {
         val token = current?.token?.takeIf { it.isNotEmpty() && isConnected }
         if (token == null) {
             reportError(ErrorKind.NOT_CONNECTED)
             return false
         }
-        client.send(Envelope(token, command))
-        return true
+        return try {
+            client.send(Envelope(token, command))
+            true
+        } catch (e: CancellationException) {
+            // Ktor cancels a closed socket's outgoing channel; only rethrow if the caller itself was cancelled.
+            currentCoroutineContext().ensureActive()
+            false
+        } catch (e: Exception) {
+            false
+        }
     }
 
     fun reportError(kind: ErrorKind) {
-        _errors.tryEmit(kind)
+        emitError(kind)
+    }
+
+    /** Every error the UI shows goes through here, so a burst of identical ones is one snackbar. */
+    private fun emitError(kind: ErrorKind) {
+        if (errorThrottle.allow(kind)) _errors.tryEmit(kind)
     }
 
     /** User-initiated: also pauses auto-connect until the user connects again. */
@@ -208,7 +233,7 @@ class RemoteSession(
             when (connectOnce(target)) {
                 SessionOutcome.FAILED -> {
                     if (attempt == 0) {
-                        if (!quiet) _errors.tryEmit(ErrorKind.CONNECTION_FAILED)
+                        if (!quiet) emitError(ErrorKind.CONNECTION_FAILED)
                         goIdle()
                         return
                     }
@@ -218,7 +243,7 @@ class RemoteSession(
                 SessionOutcome.ENDED -> return
             }
         }
-        _errors.tryEmit(ErrorKind.CONNECTION_LOST)
+        emitError(ErrorKind.CONNECTION_LOST)
         goIdle()
     }
 
@@ -278,7 +303,7 @@ class RemoteSession(
             is PairFailure -> {
                 if (message.attemptsLeft <= 0) {
                     endSession = true
-                    _errors.tryEmit(ErrorKind.PAIRING_REJECTED)
+                    emitError(ErrorKind.PAIRING_REJECTED)
                     goIdle()
                 } else {
                     _uiState.value = ConnectionUiState.Pairing(message.attemptsLeft)
@@ -302,13 +327,13 @@ class RemoteSession(
             }
             ErrorCode.BUSY -> {
                 endSession = true
-                _errors.tryEmit(ErrorKind.DESKTOP_BUSY)
+                emitError(ErrorKind.DESKTOP_BUSY)
                 goIdle()
             }
-            ErrorCode.UNSUPPORTED_OS -> _errors.tryEmit(ErrorKind.UNSUPPORTED_OS)
-            ErrorCode.NOT_FOUND -> _errors.tryEmit(ErrorKind.APP_NOT_FOUND)
-            ErrorCode.TRANSFER_FAILED -> _errors.tryEmit(ErrorKind.TRANSFER_FAILED)
-            else -> _errors.tryEmit(ErrorKind.INTERNAL)
+            ErrorCode.UNSUPPORTED_OS -> emitError(ErrorKind.UNSUPPORTED_OS)
+            ErrorCode.NOT_FOUND -> emitError(ErrorKind.APP_NOT_FOUND)
+            ErrorCode.TRANSFER_FAILED -> emitError(ErrorKind.TRANSFER_FAILED)
+            else -> emitError(ErrorKind.INTERNAL)
         }
     }
 }

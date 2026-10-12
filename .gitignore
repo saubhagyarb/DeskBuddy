@@ -17,3 +17,11 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
+
+# Signing material and build outputs — never commit
+keystore
+*.jks
+*.keystore
+*.apk
+*.aab
+androidApp/release/

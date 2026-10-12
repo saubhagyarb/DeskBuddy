@@ -41,7 +41,7 @@ import com.saubh.deskbuddy.server.FileSender
 import com.saubh.deskbuddy.ui.components.IconAvatar
 import com.saubh.deskbuddy.ui.components.MediumTonalButton
 import com.saubh.deskbuddy.ui.components.SectionTitle
-import com.saubh.deskbuddy.ui.theme.DeskBuddyIcons
+import com.saubh.deskbuddy.ui.theme.KonnektIcons
 
 /** Left column: send actions. Right column: what the phone sent us. */
 @Composable
@@ -60,7 +60,7 @@ fun SharePanel(controller: DesktopController) {
             item {
                 SectionTitle("Received from phone") {
                     TextButton(onClick = controller::openReceivedFolder) {
-                        Icon(DeskBuddyIcons.Folder, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(KonnektIcons.Folder, contentDescription = null, modifier = Modifier.size(18.dp))
                         Text("Open folder", modifier = Modifier.padding(start = 8.dp))
                     }
                 }
@@ -92,7 +92,7 @@ private fun TextCard(onSend: (String) -> Unit) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            CardHeader(DeskBuddyIcons.Notes, "Send text to phone")
+            CardHeader(KonnektIcons.Notes, "Send text to phone")
             OutlinedTextField(
                 value = draft,
                 onValueChange = { draft = it },
@@ -111,7 +111,7 @@ private fun TextCard(onSend: (String) -> Unit) {
                 enabled = draft.isNotBlank(),
                 modifier = Modifier.align(Alignment.End),
             ) {
-                Icon(DeskBuddyIcons.Send, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(KonnektIcons.Send, contentDescription = null, modifier = Modifier.size(18.dp))
                 Text("Send", modifier = Modifier.padding(start = 8.dp))
             }
         }
@@ -126,7 +126,7 @@ private fun FileCard(transfer: FileSender.Progress?, onPick: () -> Unit, onCance
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            CardHeader(DeskBuddyIcons.AttachFile, "Send a file to phone")
+            CardHeader(KonnektIcons.AttachFile, "Send a file to phone")
             if (transfer != null) {
                 val fraction = if (transfer.totalBytes > 0) transfer.sentBytes.toFloat() / transfer.totalBytes else 0f
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -139,7 +139,7 @@ private fun FileCard(transfer: FileSender.Progress?, onPick: () -> Unit, onCance
                     TextButton(onClick = onCancel) { Text("Cancel") }
                 }
             } else {
-                MediumTonalButton("Choose a file…", onPick, icon = DeskBuddyIcons.Upload, modifier = Modifier.fillMaxWidth())
+                MediumTonalButton("Choose a file…", onPick, icon = KonnektIcons.Upload, modifier = Modifier.fillMaxWidth())
             }
         }
     }
@@ -153,7 +153,7 @@ private fun ClipboardCard(autoSync: Boolean, onAutoSyncChange: (Boolean) -> Unit
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            CardHeader(DeskBuddyIcons.ContentPaste, "Clipboard")
+            CardHeader(KonnektIcons.ContentPaste, "Clipboard")
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("Auto-sync clipboard to phone", style = MaterialTheme.typography.bodyLarge)
@@ -177,7 +177,7 @@ private fun InboxEmpty() {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Icon(DeskBuddyIcons.Inbox, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
+            Icon(KonnektIcons.Inbox, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
             Text(
                 "Nothing received yet. Text and files shared from the phone show up here.",
                 style = MaterialTheme.typography.bodyMedium,
@@ -202,20 +202,20 @@ private fun InboxCard(item: DesktopController.InboxItem, onCopy: (String) -> Uni
         ) {
             when (item) {
                 is DesktopController.InboxItem.Text -> {
-                    IconAvatar(DeskBuddyIcons.Notes, 40.dp, CircleShape, scheme.secondaryContainer, scheme.onSecondaryContainer)
+                    IconAvatar(KonnektIcons.Notes, 40.dp, CircleShape, scheme.secondaryContainer, scheme.onSecondaryContainer)
                     Text(item.text, modifier = Modifier.weight(1f), maxLines = 4, style = MaterialTheme.typography.bodyLarge)
                     IconButton(onClick = { onCopy(item.text) }) {
-                        Icon(DeskBuddyIcons.ContentCopy, contentDescription = "Copy", tint = scheme.primary)
+                        Icon(KonnektIcons.ContentCopy, contentDescription = "Copy", tint = scheme.primary)
                     }
                 }
                 is DesktopController.InboxItem.File -> {
-                    IconAvatar(DeskBuddyIcons.Folder, 40.dp, CircleShape, scheme.tertiaryContainer, scheme.onTertiaryContainer)
+                    IconAvatar(KonnektIcons.Folder, 40.dp, CircleShape, scheme.tertiaryContainer, scheme.onTertiaryContainer)
                     Column(Modifier.weight(1f)) {
                         Text(item.path.fileName.toString(), style = MaterialTheme.typography.bodyLargeEmphasized, maxLines = 1)
                         Text(item.path.parent.toString(), style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1)
                     }
                     IconButton(onClick = { onCopy(item.path.toString()) }) {
-                        Icon(DeskBuddyIcons.ContentCopy, contentDescription = "Copy path", tint = scheme.primary)
+                        Icon(KonnektIcons.ContentCopy, contentDescription = "Copy path", tint = scheme.primary)
                     }
                 }
             }

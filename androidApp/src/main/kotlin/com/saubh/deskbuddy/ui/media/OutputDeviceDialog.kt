@@ -23,7 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.saubh.deskbuddy.R
 import com.saubh.deskbuddy.protocol.AudioDevice
-import com.saubh.deskbuddy.ui.theme.DeskBuddyIcons
+import com.saubh.deskbuddy.ui.theme.KonnektIcons
 
 /** Output devices as a radio list; tapping one selects it and closes the dialog. */
 @Composable
@@ -54,7 +54,7 @@ fun OutputDeviceDialog(devices: List<AudioDevice>, onSelect: (String) -> Unit, o
                         ) {
                             RadioButton(selected = device.isDefault, onClick = null)
                             Icon(
-                                if (device.name.contains("head", ignoreCase = true)) DeskBuddyIcons.Headphones else DeskBuddyIcons.Speaker,
+                                if (device.name.contains("head", ignoreCase = true)) KonnektIcons.Headphones else KonnektIcons.Speaker,
                                 contentDescription = null,
                             )
                             Text(device.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))

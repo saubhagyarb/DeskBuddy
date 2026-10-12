@@ -15,7 +15,6 @@ import com.saubh.deskbuddy.session.MediaGateway
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,7 +32,6 @@ class MediaController(
     private val decodeDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
     private companion object {
-        const val TICK_MS = 500L
         const val VOLUME_THROTTLE_MS = 100L
         const val AUDIO_HOLD_MS = 1_000L
     }
@@ -51,12 +49,11 @@ class MediaController(
     init {
         scope.launch { gateway.incoming.filterIsInstance<Push>().collect { onPush(it.command) } }
         scope.launch { gateway.connected.collect { if (it) request() } }
-        scope.launch {
-            while (true) {
-                delay(TICK_MS)
-                _state.update { s -> if (s.isPlaying) s.copy(positionMs = interpolate(s, clock())) else s }
-            }
-        }
+    }
+
+    /** Transport keys (play/pause, next, previous, volume steps) as the PC's media keys. */
+    fun send(action: MediaAction) {
+        scope.launch { gateway.send(MediaCommand(action)) }
     }
 
     fun request() {
@@ -67,7 +64,7 @@ class MediaController(
         val upper = _state.value.durationMs.takeIf { it > 0 } ?: Long.MAX_VALUE
         val target = positionMs.coerceIn(0, upper)
         val now = clock()
-        _state.update { s -> s.copy(positionMs = target, receivedAtMs = now, nowPlaying = s.nowPlaying?.copy(positionMs = target)) }
+        _state.update { s -> s.copy(receivedAtMs = now, nowPlaying = s.nowPlaying?.copy(positionMs = target)) }
         scope.launch { gateway.send(MediaSeekCommand(target)) }
     }
 
@@ -111,7 +108,6 @@ class MediaController(
             s.copy(
                 nowPlaying = command,
                 receivedAtMs = clock(),
-                positionMs = command.positionMs,
                 artwork = when {
                     sameArt -> s.artwork
                     pending != null -> pending.second
@@ -144,9 +140,6 @@ class MediaController(
             )
         }
     }
-
-    private fun interpolate(s: MediaUiState, now: Long): Long =
-        PlaybackClock.positionAt(now, s.receivedAtMs, s.nowPlaying?.positionMs ?: 0, s.durationMs, s.isPlaying)
 }
 
 private fun decodeBase64(data: String): ByteArray? =

@@ -30,19 +30,22 @@ class FileSender(private val push: suspend (Message) -> Boolean) {
         if (!push(Push(FileOfferCommand(id, name, size, mime)))) return false
         onProgress(Progress(name, 0, size))
         return try {
-            withContext(Dispatchers.IO) { Files.newInputStream(file) }.use { input ->
-                val buffer = ByteArray(Protocol.FILE_CHUNK_BYTES)
-                var index = 0
-                var sent = 0L
-                while (true) {
-                    val read = withContext(Dispatchers.IO) { input.read(buffer) }
-                    if (read <= 0) break
-                    val chunk = if (read == buffer.size) buffer else buffer.copyOf(read)
-                    if (!push(Push(FileChunkCommand(id, index++, FileChunkCodec.encode(chunk))))) {
-                        throw IOException("phone disconnected")
+            // One IO hop for the whole read loop instead of one per 32 KB chunk.
+            withContext(Dispatchers.IO) {
+                Files.newInputStream(file).use { input ->
+                    val buffer = ByteArray(Protocol.FILE_CHUNK_BYTES)
+                    var index = 0
+                    var sent = 0L
+                    while (true) {
+                        val read = input.read(buffer)
+                        if (read <= 0) break
+                        val chunk = if (read == buffer.size) buffer else buffer.copyOf(read)
+                        if (!push(Push(FileChunkCommand(id, index++, FileChunkCodec.encode(chunk))))) {
+                            throw IOException("phone disconnected")
+                        }
+                        sent += read
+                        onProgress(Progress(name, sent, size))
                     }
-                    sent += read
-                    onProgress(Progress(name, sent, size))
                 }
             }
             push(Push(FileCompleteCommand(id)))

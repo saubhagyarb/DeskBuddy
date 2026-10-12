@@ -1,4 +1,4 @@
-rootProject.name = "DeskBuddy"
+rootProject.name = "KonneKt"
 
 pluginManagement {
     repositories {

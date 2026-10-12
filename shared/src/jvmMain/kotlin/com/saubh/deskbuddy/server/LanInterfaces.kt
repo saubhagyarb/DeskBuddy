@@ -40,5 +40,5 @@ object LanInterfaces {
     }.getOrDefault(emptyList())
 
     fun hostName(): String =
-        runCatching { InetAddress.getLocalHost().hostName.removeSuffix(".local") }.getOrDefault("DeskBuddy PC")
+        runCatching { InetAddress.getLocalHost().hostName.removeSuffix(".local") }.getOrDefault("KonneKt PC")
 }

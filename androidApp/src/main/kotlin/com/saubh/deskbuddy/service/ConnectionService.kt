@@ -12,6 +12,7 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import com.saubh.deskbuddy.R
 import com.saubh.deskbuddy.appGraph
+import com.saubh.deskbuddy.keyboard.ImeStatus
 import com.saubh.deskbuddy.protocol.MediaCommand
 import com.saubh.deskbuddy.protocol.NowPlayingCommand
 import com.saubh.deskbuddy.protocol.PlaybackStatus
@@ -88,6 +89,21 @@ class ConnectionService : Service() {
             }
                 .distinctUntilChanged()
                 .collectLatest { render(it) }
+        }
+
+        scope.launch {
+            // Android cannot switch keyboards for us: prompt when the PC starts typing and ours is not active.
+            combine(graph.keyboardHub.pcTyping, graph.keyboardHub.imeBound) { typing, bound ->
+                typing && !bound && !ImeStatus.isCurrent(this@ConnectionService)
+            }
+                .distinctUntilChanged()
+                .collect { prompt ->
+                    if (prompt) {
+                        notifications.post(notifications.keyboardPrompt(ImeStatus.isEnabled(this@ConnectionService)), SessionNotifications.KEYBOARD_ID)
+                    } else {
+                        notifications.cancel(SessionNotifications.KEYBOARD_ID)
+                    }
+                }
         }
     }
 

@@ -110,7 +110,7 @@ class FileTransferController(
                         throw IOException("disconnected")
                     }
                     sent += read
-                    _progress.value = TransferProgress(name, sent, size, outgoing = true)
+                    report(TransferProgress(name, sent, size, outgoing = true))
                 }
             }
             session.send(FileCompleteCommand(id))
@@ -157,7 +157,7 @@ class FileTransferController(
             return
         }
         val incoming = result.incoming
-        _progress.value = TransferProgress(incoming.offer.name, incoming.receivedBytes, incoming.offer.sizeBytes, outgoing = false)
+        report(TransferProgress(incoming.offer.name, incoming.receivedBytes, incoming.offer.sizeBytes, outgoing = false))
     }
 
     private fun onComplete(transferId: String) {
@@ -179,6 +179,18 @@ class FileTransferController(
         targets.remove(transferId)?.abort()
         _progress.value = null
     }
+
+    /** Per-chunk progress re-renders the Share tab; only whole-percent changes are worth showing. */
+    private fun report(progress: TransferProgress) {
+        val shown = _progress.value
+        if (shown == null || shown.name != progress.name || shown.outgoing != progress.outgoing ||
+            percentOf(shown) != percentOf(progress)
+        ) {
+            _progress.value = progress
+        }
+    }
+
+    private fun percentOf(p: TransferProgress): Long = if (p.totalBytes > 0) p.doneBytes * 100 / p.totalBytes else 0
 
     private fun queryName(uri: Uri): String? =
         queryString(uri, OpenableColumns.DISPLAY_NAME) ?: uri.lastPathSegment

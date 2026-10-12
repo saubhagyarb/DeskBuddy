@@ -10,6 +10,13 @@
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Docking (charging + landscape) opens standby: Android 10+ only lets a background app open a
+         screen with "Display over other apps", and Android 12+ only lets it start the connection
+         service from the background when battery optimisation is off. Both are granted by the user. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- Fallback when overlays are not allowed: the dock notification opens standby on a locked phone. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <application
         android:name=".DeskBuddyApplication"
@@ -45,6 +52,33 @@
             android:name=".service.ConnectionService"
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
+
+        <activity
+            android:name=".ime.KeyboardPickerActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <!-- KonneKt Keyboard: types what the PC keyboard sends into the focused app. -->
+        <service
+            android:name=".ime.DeskBuddyInputMethodService"
+            android:exported="true"
+            android:label="@string/ime_name"
+            android:permission="android.permission.BIND_INPUT_METHOD">
+            <intent-filter>
+                <action android:name="android.view.InputMethod" />
+            </intent-filter>
+            <meta-data
+                android:name="android.view.im"
+                android:resource="@xml/deskbuddy_method" />
+        </service>
+
+        <!-- Restarts the app when charging starts while its process is gone. -->
+        <service
+            android:name=".service.DockWakeJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <receiver
             android:name=".service.BootReceiver"

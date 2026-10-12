@@ -18,7 +18,7 @@ class DeskBuddyAdvertiser(private val port: Int = Protocol.PORT) {
             runCatching {
                 JmDNS.create(address, name).also {
                     it.registerService(
-                        ServiceInfo.create(Protocol.SERVICE_TYPE + "local.", name, port, "DeskBuddy control server"),
+                        ServiceInfo.create(Protocol.SERVICE_TYPE + "local.", name, port, "KonneKt control server"),
                     )
                     instances += it
                 }

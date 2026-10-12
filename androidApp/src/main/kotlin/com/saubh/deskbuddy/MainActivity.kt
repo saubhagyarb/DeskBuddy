@@ -1,11 +1,13 @@
 package com.saubh.deskbuddy
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -15,18 +17,35 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.saubh.deskbuddy.power.PowerCountdownState
 import com.saubh.deskbuddy.service.ConnectionService
 import com.saubh.deskbuddy.share.PendingShare
 import com.saubh.deskbuddy.ui.ConnectionViewModel
-import com.saubh.deskbuddy.ui.DeskBuddyApp
+import com.saubh.deskbuddy.ui.KonnektApp
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
+    companion object {
+        private const val EXTRA_AUTO_STANDBY = "auto_standby"
+        private const val KEY_OPENED_FOR_AUTO_STANDBY = "opened_for_auto_standby"
+        private const val KEY_STANDBY_SHOWN = "standby_shown"
+
+        /** Opens the app in standby, from the dock launcher or its notification. */
+        fun autoStandbyIntent(context: Context): Intent = Intent(context, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            .putExtra(EXTRA_AUTO_STANDBY, true)
+    }
+
     private val viewModel: ConnectionViewModel by viewModels()
     private var openedForAutoStandby = false
+    // Whether this activity has seen standby on screen: only a visible-to-hidden change means the user left it.
+    private var standbyShown = false
+    private var lockScreenRelease: Job? = null
 
     /** Only affects whether the status / media notification is visible; the service runs either way. */
     private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
@@ -35,16 +54,20 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {
-            DeskBuddyApp(viewModel)
+            KonnektApp(viewModel, onStandbyVisibleChange = ::onStandbyVisibleChange)
         }
         if (savedInstanceState == null) handleShareIntent(intent)
-        openedForAutoStandby = intent?.getBooleanExtra("auto_standby", false) ?: false
+        // Saved state wins over the launch intent: a rotation after leaving standby must not re-arm it.
+        openedForAutoStandby = savedInstanceState?.getBoolean(KEY_OPENED_FOR_AUTO_STANDBY)
+            ?: intent?.getBooleanExtra(EXTRA_AUTO_STANDBY, false) ?: false
+        standbyShown = savedInstanceState?.getBoolean(KEY_STANDBY_SHOWN) ?: false
+        showOverLockScreen(openedForAutoStandby)
         keepServiceInSyncWithPairedPcs()
-        
+
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 appGraph.autoStandby.isAutoStandby.collect { isAuto ->
-                    if (!isAuto && openedForAutoStandby) {
+                    if (!isAuto && openedForAutoStandby && !powerCountdownActive()) {
                         finish()
                     }
                 }
@@ -54,12 +77,71 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (intent.getBooleanExtra("auto_standby", false)) {
-            openedForAutoStandby = true
-        } else {
-            openedForAutoStandby = false
+        // Only finish on undock if standby is what brought the app up; if the user already had it
+        // open (still started), leaving standby must return them to it, not close it.
+        val wasVisible = lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+        openedForAutoStandby = intent.getBooleanExtra(EXTRA_AUTO_STANDBY, false) && !wasVisible
+        if (openedForAutoStandby) {
+            lockScreenRelease?.cancel()
+            showOverLockScreen(true)
         }
         handleShareIntent(intent)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        appGraph.autoStandby.setUiVisible(true)
+    }
+
+    override fun onStop() {
+        appGraph.autoStandby.setUiVisible(false)
+        super.onStop()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_OPENED_FOR_AUTO_STANDBY, openedForAutoStandby)
+        outState.putBoolean(KEY_STANDBY_SHOWN, standbyShown)
+    }
+
+    /**
+     * Leaving standby (✕, back or undock) ends what docking opened: undock must no longer close the app,
+     * and the full app must not stay over the lock screen. A running countdown keeps the lock-screen
+     * window until it ends, so it can still be cancelled on a locked phone.
+     */
+    private fun onStandbyVisibleChange(visible: Boolean) {
+        if (visible) {
+            standbyShown = true
+            lockScreenRelease?.cancel()
+            return
+        }
+        if (!standbyShown) return // first composition, before standby has appeared
+        standbyShown = false
+        openedForAutoStandby = false
+        lockScreenRelease?.cancel()
+        lockScreenRelease = lifecycleScope.launch {
+            appGraph.power.countdown.first { it !is PowerCountdownState.Counting && it !is PowerCountdownState.Sending }
+            showOverLockScreen(false)
+        }
+    }
+
+    private fun powerCountdownActive(): Boolean = appGraph.power.countdown.value.let {
+        it is PowerCountdownState.Counting || it is PowerCountdownState.Sending
+    }
+
+    /**
+     * A docked phone is often locked: standby opened by docking shows over the lock screen and wakes
+     * the display. Cleared as soon as standby is left, so the app itself is never shown over the keyguard.
+     */
+    private fun showOverLockScreen(show: Boolean) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(show)
+            setTurnScreenOn(show)
+        } else {
+            @Suppress("DEPRECATION")
+            val flags = WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+            if (show) window.addFlags(flags) else window.clearFlags(flags)
+        }
     }
 
     /** The background service runs while at least one PC is paired (started here, while in the foreground). */

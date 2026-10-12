@@ -35,7 +35,7 @@ import com.saubh.deskbuddy.ui.components.LetterAvatar
 import com.saubh.deskbuddy.ui.components.MediumButton
 import com.saubh.deskbuddy.ui.components.MediumTonalButton
 import com.saubh.deskbuddy.ui.components.cookieShape
-import com.saubh.deskbuddy.ui.theme.DeskBuddyIcons
+import com.saubh.deskbuddy.ui.theme.KonnektIcons
 
 /** Manage which desktop programs appear as one-tap shortcuts on the phone. */
 @Composable
@@ -46,11 +46,11 @@ fun ShortcutsPanel(controller: DesktopController) {
 
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            MediumButton("Add installed app", onClick = { pickerOpen = true }, icon = DeskBuddyIcons.Add)
+            MediumButton("Add installed app", onClick = { pickerOpen = true }, icon = KonnektIcons.Add)
             MediumTonalButton(
                 "Browse for program",
                 onClick = { pickFile("Choose a program or shortcut")?.let(controller::addCustomShortcut) },
-                icon = DeskBuddyIcons.Folder,
+                icon = KonnektIcons.Folder,
             )
         }
         if (shortcuts.isEmpty()) {
@@ -90,7 +90,7 @@ private fun EmptyShortcuts() {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(Modifier.padding(24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Icon(DeskBuddyIcons.Bolt, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
+            Icon(KonnektIcons.Bolt, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
             Column {
                 Text("No shortcuts yet", style = MaterialTheme.typography.titleMediumEmphasized)
                 Text(
@@ -122,7 +122,7 @@ private fun ShortcutCard(app: DesktopApp, onRemove: () -> Unit) {
                 Text(app.id, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             IconButton(onClick = onRemove) {
-                Icon(DeskBuddyIcons.Close, contentDescription = "Remove", tint = scheme.onSurfaceVariant)
+                Icon(KonnektIcons.Close, contentDescription = "Remove", tint = scheme.onSurfaceVariant)
             }
         }
     }

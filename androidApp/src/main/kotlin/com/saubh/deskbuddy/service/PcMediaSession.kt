@@ -34,15 +34,27 @@ class PcMediaSession(
 
     val token: MediaSession.Token get() = session.sessionToken
 
+    private data class MetadataKey(val title: String?, val artist: String?, val album: String?, val durationMs: Long)
+
+    private var lastMetadata: MetadataKey? = null
+    private var lastArtwork: Bitmap? = null
+
     /** [receivedAtMs] is wall-clock time of the push that carried [nowPlaying]'s position. */
     fun update(nowPlaying: NowPlayingCommand, receivedAtMs: Long, artwork: Bitmap?) {
-        val metadata = MediaMetadata.Builder()
-            .putString(MediaMetadata.METADATA_KEY_TITLE, nowPlaying.title.orEmpty())
-            .putString(MediaMetadata.METADATA_KEY_ARTIST, nowPlaying.artist.orEmpty())
-            .putString(MediaMetadata.METADATA_KEY_ALBUM, nowPlaying.album.orEmpty())
-            .putLong(MediaMetadata.METADATA_KEY_DURATION, nowPlaying.durationMs)
-        artwork?.let { metadata.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, it) }
-        session.setMetadata(metadata.build())
+        val key = MetadataKey(nowPlaying.title, nowPlaying.artist, nowPlaying.album, nowPlaying.durationMs)
+        // Metadata carries the artwork bitmap over binder; skip it when only playback state changed.
+        // The bitmap is one cached instance per track, so identity is the right comparison.
+        if (key != lastMetadata || artwork !== lastArtwork) {
+            val metadata = MediaMetadata.Builder()
+                .putString(MediaMetadata.METADATA_KEY_TITLE, nowPlaying.title.orEmpty())
+                .putString(MediaMetadata.METADATA_KEY_ARTIST, nowPlaying.artist.orEmpty())
+                .putString(MediaMetadata.METADATA_KEY_ALBUM, nowPlaying.album.orEmpty())
+                .putLong(MediaMetadata.METADATA_KEY_DURATION, nowPlaying.durationMs)
+            artwork?.let { metadata.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, it) }
+            session.setMetadata(metadata.build())
+            lastMetadata = key
+            lastArtwork = artwork
+        }
 
         val playing = nowPlaying.status == PlaybackStatus.PLAYING
         var actions = PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_PLAY_PAUSE or
@@ -60,6 +72,8 @@ class PcMediaSession(
     }
 
     fun deactivate() {
+        lastMetadata = null
+        lastArtwork = null
         if (session.isActive) session.isActive = false
     }
 

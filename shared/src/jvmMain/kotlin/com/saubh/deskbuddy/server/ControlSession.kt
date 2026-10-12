@@ -4,6 +4,7 @@ import com.saubh.deskbuddy.pairing.PairingResult
 import com.saubh.deskbuddy.pairing.PairingSession
 import com.saubh.deskbuddy.pairing.PinGenerator
 import com.saubh.deskbuddy.protocol.Ack
+import com.saubh.deskbuddy.protocol.ActivateAppCommand
 import com.saubh.deskbuddy.protocol.AddShortcutCommand
 import com.saubh.deskbuddy.protocol.AppCatalogRequestCommand
 import com.saubh.deskbuddy.protocol.AudioStateCommand
@@ -22,6 +23,9 @@ import com.saubh.deskbuddy.protocol.FileCancelCommand
 import com.saubh.deskbuddy.protocol.FileChunkCommand
 import com.saubh.deskbuddy.protocol.FileCompleteCommand
 import com.saubh.deskbuddy.protocol.FileOfferCommand
+import com.saubh.deskbuddy.protocol.KeyPressCommand
+import com.saubh.deskbuddy.protocol.KeyTextCommand
+import com.saubh.deskbuddy.protocol.KeyboardModeCommand
 import com.saubh.deskbuddy.protocol.LaunchAppCommand
 import com.saubh.deskbuddy.protocol.MediaAction
 import com.saubh.deskbuddy.protocol.MediaCommand
@@ -35,6 +39,11 @@ import com.saubh.deskbuddy.protocol.PowerCommand
 import com.saubh.deskbuddy.protocol.Push
 import com.saubh.deskbuddy.protocol.RemoveShortcutCommand
 import com.saubh.deskbuddy.protocol.TextShareCommand
+import com.saubh.deskbuddy.protocol.CloseAppCommand
+import com.saubh.deskbuddy.protocol.CloseTabCommand
+import com.saubh.deskbuddy.protocol.CloseWindowCommand
+import com.saubh.deskbuddy.protocol.RunningAppsCommand
+import com.saubh.deskbuddy.protocol.RunningAppsRequestCommand
 
 data class SessionReply(val message: Message?, val closeConnection: Boolean = false)
 
@@ -53,16 +62,22 @@ class ControlSession(
     private val newToken: () -> String = { TokenGenerator.generate() },
     private val desktopName: String = "",
     private val desktopId: String = "",
+    private val log: (String) -> Unit = ServerLog::write,
 ) {
     private companion object {
         val OK = Ack(ok = true)
         val TRANSFER_FAILED = Ack(ok = false, error = ErrorCode.TRANSFER_FAILED)
         val NOT_FOUND = Ack(ok = false, error = ErrorCode.NOT_FOUND)
         val INTERNAL = Ack(ok = false, error = ErrorCode.INTERNAL)
+        val UNSUPPORTED_OS = Ack(ok = false, error = ErrorCode.UNSUPPORTED_OS)
+
+        /** Typing, not pasting: bulk text goes through Share. */
+        const val MAX_TYPED_CHARS = 4096
     }
 
     private var pairing: PairingSession? = null
     private var pendingDeviceName: String = "Unknown device"
+    private var keyboardUnsupportedReported = false
 
     fun onMessage(message: Message): SessionReply = when (message) {
         is PairRequest -> startPairing(message)
@@ -108,15 +123,16 @@ class ControlSession(
     }
 
     private fun handleEnvelope(envelope: Envelope): SessionReply {
-        if (!store.isValidToken(envelope.token)) {
-            return SessionReply(Ack(ok = false, error = ErrorCode.AUTH_REQUIRED))
-        }
-        listener.onAuthenticated(store.deviceNameForToken(envelope.token) ?: "Unknown device", envelope.token)
+        val deviceName = store.deviceNameForToken(envelope.token)
+            ?: return SessionReply(Ack(ok = false, error = ErrorCode.AUTH_REQUIRED))
+        listener.onAuthenticated(deviceName, envelope.token)
         return try {
             SessionReply(execute(envelope.command))
         } catch (e: UnsupportedOsException) {
+            log("${envelope.command::class.simpleName}: unsupported OS")
             SessionReply(Ack(ok = false, error = ErrorCode.UNSUPPORTED_OS))
         } catch (e: Exception) {
+            log("${envelope.command::class.simpleName}: ${e::class.simpleName}: ${e.message}")
             SessionReply(Ack(ok = false, error = ErrorCode.INTERNAL))
         }
     }
@@ -135,8 +151,9 @@ class ControlSession(
         is FileCompleteCommand ->
             if (actuators.files.complete(command.transferId) != null) OK else TRANSFER_FAILED
         is FileCancelCommand -> OK.also { actuators.files.cancel(command.transferId) }
-        is AppCatalogRequestCommand -> actuators.apps.refresh()
+        is AppCatalogRequestCommand -> actuators.apps.forPhone()
         is LaunchAppCommand -> if (actuators.apps.launch(command.appId)) OK else NOT_FOUND
+        is ActivateAppCommand -> if (actuators.apps.activate(command.appId, actuators.windows::focusApp)) OK else NOT_FOUND
         is AddShortcutCommand ->
             if (actuators.apps.addShortcut(command.appId)) actuators.apps.catalog.value else NOT_FOUND
         is RemoveShortcutCommand -> {
@@ -159,6 +176,32 @@ class ControlSession(
                 PowerAction.RESTART -> actuators.power.restart()
                 PowerAction.LOCK -> actuators.power.lock()
             }
+        }
+        is KeyTextCommand ->
+            if (command.text.length > MAX_TYPED_CHARS) INTERNAL else keyboard { actuators.keyboard.type(command.text) }
+        is KeyPressCommand -> keyboard { actuators.keyboard.press(command.key, command.modifiers) }
+        // Desktop → phone only.
+        is KeyboardModeCommand, is RunningAppsCommand -> INTERNAL
+        is RunningAppsRequestCommand -> windows { OK.also { actuators.onRunningAppsRequested() } }
+        is CloseWindowCommand -> windows { if (actuators.windows.closeWindow(command.windowId)) OK else NOT_FOUND }
+        is CloseAppCommand -> windows { if (actuators.windows.closeApp(command.appId)) OK else NOT_FOUND }
+        is CloseTabCommand ->
+            windows { if (actuators.windows.closeTab(command.windowId, command.index, command.title)) OK else NOT_FOUND }
+    }
+
+    private fun windows(action: () -> Message): Message =
+        if (actuators.windows.isSupported) action() else UNSUPPORTED_OS
+
+    /** Keystrokes are silent on success; an unsupported OS is reported once per connection, not once per key. */
+    private fun keyboard(action: () -> Unit): Message? = try {
+        action()
+        null
+    } catch (e: UnsupportedOsException) {
+        if (keyboardUnsupportedReported) {
+            null
+        } else {
+            keyboardUnsupportedReported = true
+            UNSUPPORTED_OS
         }
     }
 

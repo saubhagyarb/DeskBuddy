@@ -34,7 +34,7 @@ class AppShortcutsController(
                         runCatching { Base64.decode(b64, Base64.DEFAULT) }.getOrNull()?.let { id to it }
                     }.toMap()
                 }
-                _state.value = AppsUiState(catalog.apps, catalog.shortcutIds, icons, loaded = true)
+                _state.value = AppsUiState(catalog.apps, catalog.shortcutIds, icons, loaded = true, canActivate = catalog.canActivate)
             }
         }
         scope.launch {
@@ -50,6 +50,10 @@ class AppShortcutsController(
 
     fun launch(appId: String) {
         scope.launch { session.send(LaunchAppCommand(appId)) }
+    }
+
+    fun activate(appId: String) {
+        scope.launch { session.send(_state.value.openCommandFor(appId)) }
     }
 
     fun pin(appId: String) {

@@ -2,6 +2,7 @@ package com.saubh.deskbuddy.server.audio
 
 import com.saubh.deskbuddy.protocol.AudioDevice
 import com.saubh.deskbuddy.server.AudioActuator
+import com.saubh.deskbuddy.server.AudioLevels
 import com.saubh.deskbuddy.server.audio.CoreAudioIds as Ids
 import com.sun.jna.WString
 import com.sun.jna.platform.win32.Ole32
@@ -23,9 +24,23 @@ class WindowsAudioActuator : AudioActuator {
     private val executor = Executors.newSingleThreadExecutor { r -> Thread(r, "deskbuddy-audio").apply { isDaemon = true } }
     private var initialized = false
 
+    /** Endpoint volume of the default device, reused across polls. Touched only on the COM thread. */
+    private var endpoint: ComObject? = null
+    private var endpointDeviceId: String? = null
+
+    override fun levels(): AudioLevels = onComThread {
+        withEndpointVolume { ep ->
+            val scalar = FloatByReference().also { ep.check(Ids.GET_MASTER_VOLUME_SCALAR, it) }.value
+            val muted = IntByReference().also { ep.check(Ids.GET_MUTE, it) }.value != 0
+            AudioLevels((scalar * 100f).roundToInt().coerceIn(0, 100), muted)
+        }
+    }
+
     override fun devices(): List<AudioDevice> = onComThread {
         enumerator().use { enumerator ->
             val defaultId = enumerator.child(Ids.GET_DEFAULT_AUDIO_ENDPOINT, Ids.eRender, Ids.eMultimedia).use(::deviceId)
+            // The user switched output on the PC: the cached endpoint belongs to the old device.
+            if (defaultId != endpointDeviceId) dropEndpoint()
             enumerator.child(Ids.ENUM_AUDIO_ENDPOINTS, Ids.eRender, Ids.DEVICE_STATE_ACTIVE).use { collection ->
                 val count = IntByReference().also { collection.check(Ids.COLLECTION_GET_COUNT, it) }.value
                 (0 until count).map { index ->
@@ -60,6 +75,7 @@ class WindowsAudioActuator : AudioActuator {
             policy.check(Ids.SET_DEFAULT_ENDPOINT, WString(id), Ids.eConsole)
             policy.check(Ids.SET_DEFAULT_ENDPOINT, WString(id), Ids.eMultimedia)
         }
+        dropEndpoint()
         true
     }
 
@@ -70,10 +86,27 @@ class WindowsAudioActuator : AudioActuator {
         }
     }
 
-    private fun <T> withEndpointVolume(block: (ComObject) -> T): T = enumerator().use { enumerator ->
-        enumerator.child(Ids.GET_DEFAULT_AUDIO_ENDPOINT, Ids.eRender, Ids.eMultimedia).use { device ->
-            device.child(Ids.DEVICE_ACTIVATE, Ids.IID_IAudioEndpointVolume.pointer, Ids.CLSCTX_ALL, null).use(block)
+    private fun <T> withEndpointVolume(block: (ComObject) -> T): T {
+        val ep = endpoint ?: openDefaultEndpoint().also { endpoint = it }
+        return try {
+            block(ep)
+        } catch (e: Exception) {
+            dropEndpoint()
+            throw e
         }
+    }
+
+    private fun openDefaultEndpoint(): ComObject = enumerator().use { enumerator ->
+        enumerator.child(Ids.GET_DEFAULT_AUDIO_ENDPOINT, Ids.eRender, Ids.eMultimedia).use { device ->
+            endpointDeviceId = deviceId(device)
+            device.child(Ids.DEVICE_ACTIVATE, Ids.IID_IAudioEndpointVolume.pointer, Ids.CLSCTX_ALL, null)
+        }
+    }
+
+    private fun dropEndpoint() {
+        endpoint?.close()
+        endpoint = null
+        endpointDeviceId = null
     }
 
     private fun enumerator(): ComObject {

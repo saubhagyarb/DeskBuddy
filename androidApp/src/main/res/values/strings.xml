@@ -1,50 +1,162 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DeskBuddy</string>
+    <string name="app_name">KonneKt</string>
+    <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
+    <string name="connect">Connect</string>
 
-    <string name="connect_subtitle">Control your PC from your phone</string>
-    <string name="saved_pc">Your PC</string>
-    <string name="saved_pcs">Paired PCs</string>
-    <string name="saved_pc_auto_hint">Connects automatically whenever this PC is on — no need to pair again.</string>
-    <string name="cd_forget_pc">Forget %1$s</string>
+    <!-- Devices (not connected) -->
+    <string name="devices_subtitle">Your PC, in your pocket</string>
+    <string name="devices_your_pcs">Your PCs</string>
+    <string name="devices_your_pcs_hint">KonneKt reconnects to these on its own whenever they are on.</string>
+    <string name="devices_nearby">Nearby</string>
+    <string name="devices_searching">Looking for PCs on your Wi-Fi…</string>
+    <string name="devices_searching_hint">Make sure KonneKt is running on your PC and both are on the same network.</string>
+    <string name="devices_pair">Pair</string>
+    <string name="devices_enter_ip">Enter IP address</string>
+    <string name="cd_more_options">More options for %1$s</string>
+    <string name="connecting_to">Connecting to %1$s…</string>
+    <string name="start_title">Set up in three steps</string>
+    <string name="start_step_install">Install and open KonneKt on your PC.</string>
+    <string name="start_step_wifi">Connect this phone to the same Wi-Fi as the PC.</string>
+    <string name="start_step_pair">Tap your PC below and enter the 6-digit code it shows.</string>
+    <string name="manual_title">Connect by address</string>
+    <string name="manual_hint">The address is shown in the KonneKt window on your PC.</string>
+    <string name="manual_ip_hint">PC IP address (e.g. 192.168.1.20)</string>
     <string name="forget_pc_title">Forget %1$s?</string>
     <string name="forget_pc_text">This phone will stop connecting to it automatically. You will need the pairing PIN to connect again.</string>
     <string name="forget_pc_confirm">Forget</string>
-    <string name="reconnect">Reconnect</string>
-    <string name="discovered_desktops">On your network</string>
-    <string name="searching_pcs">Looking for PCs on your Wi-Fi…</string>
-    <string name="no_desktops_found">No desktops found yet. Scanning your Wi-Fi too — make sure DeskBuddy is running on your PC.</string>
-    <string name="manual_title">Connect by address</string>
-    <string name="manual_ip_hint">PC IP address (e.g. 192.168.1.20)</string>
-    <string name="connect">Connect</string>
-    <string name="connecting_to">Connecting to %1$s…</string>
 
     <string name="pin_title">Enter pairing PIN</string>
-    <string name="pin_subtitle">The 6-digit code is shown in the DeskBuddy window on your PC.</string>
-    <string name="attempts_left">Wrong PIN. %1$d attempts left.</string>
+    <string name="pin_subtitle">The 6-digit code is shown in the KonneKt window on your PC.</string>
+    <plurals name="attempts_left">
+        <item quantity="one">Wrong PIN. %1$d attempt left.</item>
+        <item quantity="other">Wrong PIN. %1$d attempts left.</item>
+    </plurals>
     <string name="pair">Pair</string>
-    <string name="cancel">Cancel</string>
 
+    <!-- Connected shell -->
     <string name="status_connected">Connected</string>
-    <string name="reconnecting">Reconnecting… (attempt %1$d)</string>
+    <string name="status_reconnecting">Reconnecting… (attempt %1$d)</string>
     <string name="cd_disconnect">Disconnect from PC</string>
+    <string name="cd_standby">Standby mode</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_media">Media</string>
+    <string name="nav_apps">Apps</string>
+    <string name="nav_share">Share</string>
+    <string name="nav_keyboard">Keyboard</string>
 
-    <string name="tab_media">Media</string>
-    <string name="tab_apps">Apps</string>
-    <string name="tab_share">Share</string>
-    <string name="standby">Standby</string>
-    <string name="cd_exit_standby">Exit standby</string>
+    <!-- Home -->
+    <string name="home_connected_to">Connected to</string>
+    <string name="home_auto_reconnect">Reconnects automatically</string>
+    <string name="home_media_hint">Tap to open the player</string>
+    <string name="home_quick_actions">Quick actions</string>
+    <string name="home_send_clipboard">Send clipboard</string>
+    <string name="home_get_clipboard">Get PC clipboard</string>
+    <string name="home_send_file">Send file</string>
+    <string name="home_type">Type on PC</string>
+    <string name="home_shortcuts">Shortcuts</string>
+    <string name="home_all_apps">All apps</string>
+    <string name="home_no_shortcuts">Star apps under Apps → Launch to pin them here.</string>
+    <string name="home_dock_title">Open standby when docked</string>
+    <string name="home_dock_text">Plug in your phone and turn it sideways: KonneKt starts by itself and shows standby. Android needs two permissions for that.</string>
+    <string name="home_dock_allow_overlay">Allow display over apps</string>
+    <string name="home_dock_allow_background">Allow in background</string>
+    <string name="power_lock">Lock</string>
+    <string name="power_restart">Restart</string>
+    <string name="power_shutdown">Shut down</string>
     <string name="cd_lock_pc">Lock PC</string>
-    <string name="cd_restart_pc">Restart PC</string>
-    <string name="cd_shutdown_pc">Shut down PC</string>
-    <string name="power_restart_title">Restart your PC?</string>
-    <string name="power_restart_text">Open apps on the PC will close. Unsaved work may be lost.</string>
-    <string name="power_restart_confirm">Restart</string>
-    <string name="power_shutdown_title">Shut down your PC?</string>
-    <string name="power_shutdown_text">Open apps on the PC will close. Unsaved work may be lost.</string>
-    <string name="power_shutdown_confirm">Shut down</string>
-    <string name="standby_no_shortcuts">No shortcuts yet. Star apps on the Apps tab to see them here.</string>
+    <string name="power_countdown_shutdown_title">Shutting down %1$s</string>
+    <string name="power_countdown_restart_title">Restarting %1$s</string>
+    <plurals name="power_countdown_in_seconds">
+        <item quantity="one">in %d second</item>
+        <item quantity="other">in %d seconds</item>
+    </plurals>
+    <string name="power_countdown_hint">Save your work. Unsaved changes on the PC may be lost.</string>
+    <string name="power_countdown_cancel">Cancel</string>
+    <string name="power_countdown_sending">Sending to %1$s…</string>
+    <string name="power_result_shutdown_sent">Shutting down %1$s now</string>
+    <string name="power_result_restart_sent">Restarting %1$s now</string>
+    <string name="power_result_sent_hint">The command reached your PC.</string>
+    <string name="power_result_shutdown_cancelled">Shutdown cancelled</string>
+    <string name="power_result_restart_cancelled">Restart cancelled</string>
+    <string name="power_result_cancelled_hint">Nothing was sent to %1$s.</string>
+    <string name="power_result_not_connected">Couldn\'t reach %1$s</string>
+    <string name="power_result_not_connected_hint">Nothing was sent. Reconnect and try again.</string>
 
+    <!-- Keyboard -->
+    <string name="keyboard_pane_pc">Type on PC</string>
+    <string name="keyboard_pane_phone">Type on phone</string>
+    <string name="keyboard_typing_into">Typing into the active window on %1$s</string>
+    <string name="keyboard_field_label">Type here</string>
+    <string name="keyboard_field_hint">Letters appear on the PC as you type. Send presses Enter.</string>
+    <string name="keyboard_not_connected">Waiting for the PC to reconnect…</string>
+    <string name="keyboard_tip">Tap Ctrl, Alt, Shift or Win once for the next key, twice to lock it. Backspace and Enter work even when the field is empty.</string>
+    <string name="key_esc">Esc</string>
+    <string name="key_tab">Tab</string>
+    <string name="key_left">←</string>
+    <string name="key_up">↑</string>
+    <string name="key_down">↓</string>
+    <string name="key_right">→</string>
+    <string name="key_del">Del</string>
+    <string name="key_home">Home</string>
+    <string name="key_end">End</string>
+    <string name="key_pgup">PgUp</string>
+    <string name="key_pgdn">PgDn</string>
+    <string name="key_ctrl">Ctrl</string>
+    <string name="key_alt">Alt</string>
+    <string name="key_shift">Shift</string>
+    <string name="key_win">Win</string>
+    <string name="combo_alt_tab">Alt+Tab</string>
+    <string name="combo_win_d">Win+D</string>
+    <string name="combo_copy">Copy</string>
+    <string name="combo_paste">Paste</string>
+    <string name="combo_undo">Undo</string>
+    <string name="combo_select_all">Select all</string>
+    <string name="cd_modifier_locked">%1$s locked</string>
+    <string name="cd_key_backspace">Backspace</string>
+    <string name="cd_key_enter">Enter</string>
+    <string name="phone_typing_active">%1$s is typing on this phone</string>
+    <string name="phone_typing_idle">Type on this phone from %1$s</string>
+    <string name="phone_typing_explain">Use the PC keyboard to type into any app on this phone.</string>
+    <string name="phone_step_enable">Turn on KonneKt Keyboard in Android settings.</string>
+    <string name="phone_step_enable_button">Open keyboard settings</string>
+    <string name="phone_step_hotkey">On the PC, press Ctrl+Alt+K.</string>
+    <string name="phone_step_switch">Switch this phone to KonneKt Keyboard (KonneKt also prompts you with a notification).</string>
+    <string name="phone_step_switch_button">Choose keyboard</string>
+    <string name="cd_step_done">Done</string>
+    <string name="keyboard_setup_warning">Android warns that any keyboard may collect the text you type. KonneKt Keyboard only types what your PC sends and stores nothing.</string>
+    <string name="ime_name">KonneKt Keyboard</string>
+    <string name="ime_typing_from">Typing from %1$s</string>
+    <string name="ime_pc_off">PC keyboard is off</string>
+    <string name="ime_switch">Switch keyboard</string>
+
+    <!-- Standby -->
+    <string name="cd_exit_standby">Exit standby</string>
+    <string name="cd_standby_power">Power options</string>
+    <string name="standby_no_shortcuts">No shortcuts yet. Star apps under Apps → Launch to see them here.</string>
+    <string name="standby_mode_clock">Clock</string>
+    <string name="standby_mode_media_apps">Media + Apps</string>
+    <string name="standby_mode_multimedia">Multimedia</string>
+    <string name="standby_mode_development">Development</string>
+    <string name="cd_standby_modes">Standby modes</string>
+    <string name="standby_reconnecting">Reconnecting to %1$s…</string>
+    <string name="standby_not_connected">No PC connected</string>
+    <string name="standby_not_connected_hint">PC controls come back here as soon as your PC reconnects.</string>
+    <string name="cd_volume_down">Volume down</string>
+    <string name="cd_volume_up">Volume up</string>
+    <string name="cd_output_device_selected">%1$s, selected</string>
+    <string name="standby_app_running_state">Running</string>
+    <string name="cd_clock_face">Clock face: %1$s</string>
+    <string name="clock_face_flip">Flip</string>
+    <string name="clock_face_bubble">Bubble</string>
+    <string name="clock_face_neon">Neon orbit</string>
+    <string name="clock_face_dot_matrix">LED</string>
+    <string name="clock_am">AM</string>
+    <string name="clock_pm">PM</string>
+    <string name="standby_battery">%1$d%% battery</string>
+
+    <!-- Media -->
     <string name="media_nothing_playing">Nothing playing</string>
     <string name="media_nothing_playing_hint">Start something on your PC and it will show up here.</string>
     <string name="media_output_device">Output device</string>
@@ -59,12 +171,41 @@
     <string name="separator_dot">" • "</string>
     <string name="cd_next">Next track</string>
     <string name="cd_previous">Previous track</string>
-    <string name="cd_volume_up">Volume up</string>
-    <string name="cd_volume_down">Volume down</string>
     <string name="cd_mute">Mute</string>
 
+    <!-- Apps -->
+    <string name="apps_pane_open">Open now</string>
+    <string name="apps_pane_launch">Launch</string>
+    <string name="open_title">Open on your PC</string>
+    <string name="open_subtitle">Close windows, whole apps or single browser tabs.</string>
+    <string name="open_updated_at">Updated at %1$s</string>
+    <string name="open_loading">Reading open windows and browser tabs…</string>
+    <string name="open_empty">No windows are open on the PC.</string>
+    <string name="open_idle">Tap refresh to see what is open on the PC.</string>
+    <string name="cd_refresh_windows">Refresh open windows</string>
+    <string name="close_app">Close app</string>
+    <string name="close_app_title">Close %1$s?</string>
+    <plurals name="close_app_text">
+        <item quantity="one">Its window will be asked to close. Unsaved work may make the app ask you on the PC first.</item>
+        <item quantity="other">All %1$d of its windows will be asked to close. Unsaved work may make the app ask you on the PC first.</item>
+    </plurals>
+    <string name="close_window_title">Close this window?</string>
+    <string name="close_tab_title">Close this tab?</string>
+    <string name="cd_close_window">Close window %1$s</string>
+    <string name="cd_close_tab">Close tab %1$s</string>
+    <string name="cd_show_tabs">Show tabs</string>
+    <string name="cd_hide_tabs">Hide tabs</string>
+    <plurals name="open_window_count">
+        <item quantity="one">%1$d window</item>
+        <item quantity="other">%1$d windows</item>
+    </plurals>
+    <plurals name="open_tab_count">
+        <item quantity="one">%1$d tab</item>
+        <item quantity="other">%1$d tabs</item>
+    </plurals>
     <string name="apps_shortcuts_title">Shortcuts</string>
-    <string name="apps_no_shortcuts">No shortcuts yet. Star an app below, or add one from the DeskBuddy window on your PC.</string>
+    <string name="apps_shortcuts_hint">One tap to launch on the PC</string>
+    <string name="apps_no_shortcuts">No shortcuts yet. Star an app below, or add one from the KonneKt window on your PC.</string>
     <string name="apps_all_title">All apps on PC</string>
     <string name="apps_search_hint">Search apps</string>
     <string name="apps_refresh">Refresh</string>
@@ -74,42 +215,56 @@
     <string name="cd_unpin">Remove from shortcuts</string>
     <string name="cd_launch">Launch %1$s</string>
 
+    <!-- Share -->
     <string name="share_clipboard_title">Clipboard</string>
-    <string name="share_auto_sync">Auto-sync with PC</string>
-    <string name="share_send_clipboard">Send clipboard</string>
-    <string name="share_get_clipboard">Get PC clipboard</string>
+    <string name="share_clipboard_hint">Copy on one device, paste on the other.</string>
+    <string name="share_auto_sync">Sync automatically</string>
+    <string name="share_auto_sync_hint">Copies on either device reach the other while KonneKt is open.</string>
+    <string name="share_send_clipboard">Send</string>
+    <string name="share_get_clipboard">Get</string>
     <string name="share_text_title">Send text to PC</string>
     <string name="share_text_hint">Type or paste text</string>
-    <string name="share_send_text">Send</string>
-    <string name="share_file_title">Files</string>
-    <string name="share_pick_file">Send a file</string>
+    <string name="share_send_text">Send text</string>
+    <string name="share_pick_file">Send a file to PC</string>
     <string name="share_sending">Sending %1$s</string>
     <string name="share_receiving">Receiving %1$s</string>
     <string name="share_percent">%1$d%%</string>
     <string name="share_inbox_title">Received from PC</string>
+    <string name="share_inbox_hint">Newest first</string>
     <string name="share_inbox_empty">Nothing received yet. Text and files sent from your PC show up here.</string>
     <string name="share_copy">Copy</string>
     <string name="share_saved_to">Saved to %1$s</string>
     <string name="share_clear_inbox">Clear</string>
+    <string name="share_clear_title">Clear received items?</string>
+    <string name="share_clear_text">The list is cleared. Received files stay where they were saved.</string>
 
+    <!-- Notifications -->
     <string name="notif_channel_connection">PC connection</string>
     <string name="notif_channel_media">Now playing on PC</string>
     <string name="notif_connected">Connected to %1$s</string>
-    <string name="notif_connected_text">Tap to open DeskBuddy.</string>
+    <string name="notif_connected_text">Tap to open KonneKt.</string>
     <string name="notif_connecting">Connecting to your PC…</string>
     <string name="notif_waiting">Waiting for your PC</string>
-    <string name="notif_waiting_text">DeskBuddy connects on its own as soon as your PC is on.</string>
+    <string name="notif_waiting_text">KonneKt connects on its own as soon as your PC is on.</string>
     <string name="notif_paused">Disconnected</string>
-    <string name="notif_paused_text">Open DeskBuddy to connect again.</string>
+    <string name="notif_paused_text">Open KonneKt to connect again.</string>
+    <string name="notif_channel_keyboard">PC keyboard</string>
+    <string name="notif_keyboard_title">PC keyboard ready</string>
+    <string name="notif_keyboard_text">Tap to switch to KonneKt Keyboard.</string>
+    <string name="notif_keyboard_enable_text">Tap to turn on KonneKt Keyboard, then switch to it.</string>
+    <string name="notif_channel_dock">Docked standby</string>
+    <string name="notif_dock_title">Phone docked</string>
+    <string name="notif_dock_text">Tap to open standby.</string>
 
-    <string name="err_connection_failed">Could not connect. Check that DeskBuddy is running on your PC.</string>
+    <!-- Errors -->
+    <string name="err_connection_failed">Could not connect. Check that KonneKt is running on your PC.</string>
     <string name="err_connection_lost">Connection lost.</string>
     <string name="err_pairing_rejected">Pairing rejected by the PC.</string>
     <string name="err_desktop_busy">Another device is already connected to this PC.</string>
     <string name="err_unsupported_os">This action is not supported on the PC\'s operating system.</string>
     <string name="err_internal">Something went wrong. Please try again.</string>
     <string name="err_not_connected">Not connected to a PC.</string>
-    <string name="err_app_not_found">That app is no longer available on the PC.</string>
+    <string name="err_app_not_found">That app or window is no longer open on the PC.</string>
     <string name="err_transfer_failed">File transfer failed.</string>
     <string name="err_clipboard_empty">Your clipboard has no text to send.</string>
     <string name="err_file_unreadable">Could not read that file.</string>
