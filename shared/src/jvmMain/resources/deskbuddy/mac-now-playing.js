@@ -7,7 +7,8 @@ var out = $.NSFileHandle.fileHandleWithStandardOutput;
 var PLAYERS = ['Spotify', 'Music'];
 
 function emit(obj) {
-  out.writeData($(JSON.stringify(obj) + '\n').dataUsingEncoding($.NSUTF8StringEncoding));
+  // Pad with 4096 spaces to force a flush when osascript's stdout is block-buffered (piped to another process).
+  out.writeData($(JSON.stringify(obj) + '\n' + ' '.repeat(4096)).dataUsingEncoding($.NSUTF8StringEncoding));
 }
 
 function str(f) { try { var v = f(); return v === null || v === undefined ? '' : String(v); } catch (e) { return ''; } }

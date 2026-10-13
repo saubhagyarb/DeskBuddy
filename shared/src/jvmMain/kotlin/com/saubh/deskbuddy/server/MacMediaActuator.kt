@@ -21,8 +21,10 @@ class MacMediaActuator(
 
     companion object {
         const val NX_KEYTYPE_PLAY = 16
-        const val NX_KEYTYPE_NEXT = 17
-        const val NX_KEYTYPE_PREVIOUS = 18
+        // macOS keyboards map the Next physical button to FAST (19) and Previous to REWIND (20).
+        // 17 and 18 are historically NEXT/PREVIOUS but do not reliably skip tracks.
+        const val NX_KEYTYPE_NEXT = 19
+        const val NX_KEYTYPE_PREVIOUS = 20
         const val VOLUME_STEP = 6
 
         /** Key down then key up, each an `NSSystemDefined` (14) event of subtype 8 (aux control button). */
